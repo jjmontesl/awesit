@@ -9,8 +9,10 @@ import tempfile
 import fabric
 from sitetool.core.exceptions import SiteToolException
 import datetime
+import warnings
 
 logger = logging.getLogger(__name__)
+
 
 
 class SSHFiles():
@@ -79,9 +81,9 @@ class SSHFiles():
             output = None
             try:
                 if self.sudo:
-                    output = c.sudo('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path))
+                    output = c.sudo('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)
                 else:
-                    output = c.run('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path))
+                    output = c.run('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling

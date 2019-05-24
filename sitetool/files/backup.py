@@ -8,6 +8,7 @@ from sitetool.sites import Site
 import os
 import stat
 from collections import namedtuple
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -92,12 +93,16 @@ class BackupListCommand():
 
     def parse_args(self, args):
 
-        parser = argparse.ArgumentParser(description='Show available backup jobs')
-        parser.add_argument("src", default="::::", nargs='?', help="backupsite:env:site:env - source backup and site environments")
+        parser = argparse.ArgumentParser(prog="sitetool backup", description='Show available backup jobs')
+        parser.add_argument("source", default="::::", nargs='?', help="backupsite:env:site:env - source backup and site environments")
+        parser.add_argument("-s", "--by-size", action="store_true", default=False, help="sort by size")
+        parser.add_argument("-r", "--reverse", action="store_true", default=False, help="reverse ordering")
 
         args = parser.parse_args(args)
 
-        self.src = args.src
+        self.src = args.source
+        self.by_size = args.by_size
+        self.reverse = args.reverse
 
     def run(self):
         """
@@ -107,22 +112,35 @@ class BackupListCommand():
         backupmanager = BackupManager(self.st)
         backups = backupmanager.list_backups(self.src)
 
-        idx = 0
+        if self.by_size:
+            backups.sort(key=lambda x: x.size)
+
+        if self.reverse:
+            backups.reverse()
+
+        count = 0
         total_size = 0
+        #md5 = hashlib.md5()
         for backup in backups:
-            idx += 1
+            count += 1
+            #md5.update(backup.env_backup['site']['name'].encode('utf-8'))
+            #md5.update(backup.env_backup['name'].encode('utf-8'))
+            #md5.update(backup.env_site['site']['name'].encode('utf-8'))
+            #md5.update(backup.env_site['name'].encode('utf-8'))
+            #md5.update(backup.filename.encode('utf-8'))
             total_size += backup.size
-            print("%4d %20s %20s %6.1fMB %s (%s)" % (idx,
+            print("%4d %20s %20s %6.1fMB %s (%s)" % (backup.index,
+                                                #md5.hexdigest()[:6],
                                                ("%s:%s" % (backup.env_backup['site']['name'], backup.env_backup['name'])),
                                                ("%s:%s" % (backup.env_site['site']['name'], backup.env_site['name'])),
                                                backup.size / (1024 * 1024),
                                                backup.filename,
                                                backup.dt_create))
 
-        print("Listed jobs: %d  Total size: %.1fMB" % (idx, total_size / (1024 * 1024)))
+        print("Listed jobs: %d  Total size: %.1fMB" % (count, total_size / (1024 * 1024)))
 
 
-class BackupJob(namedtuple('BackupJob', 'env_backup env_site root filename dt_create size')):
+class BackupJob(namedtuple('BackupJob', 'env_backup env_site root filename dt_create size index')):
     pass
 
 
@@ -170,20 +188,30 @@ class BackupManager():
         src_site_name = env_o['site']['name']
         src_site_env = env_o['name']
 
+        # Obtain file list from files
         backup_path = '%s/%s' % (src_site_name, src_site_env)
         # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
         files = env['files'].file_list(backup_path)
 
         jobs = []
 
+        files.sort(key=lambda x: x[3])
+        files.reverse()
+        idx = 0
         for f in files:
-            jobs.append(BackupJob(env, env_o, f[0], f[1], f[3], f[2]))
+            idx -= 1
+            jobs.append(BackupJob(env, env_o, f[0], f[1], f[3], f[2], idx))
 
         jobs.sort(key=lambda x: x.dt_create)
+        for job in jobs:
+            job
 
-        if job_expr.startswith('-'):
-            jobs = jobs[- int(job_expr[1:])]
-            jobs = [jobs]
+        if job_expr.startswith('-') and jobs:
+            idx = int(job_expr)
+            if (-idx <= len(jobs)):
+                jobs = [jobs[idx]]
+            else:
+                jobs = []
 
         return jobs
 

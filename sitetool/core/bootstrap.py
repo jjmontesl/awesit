@@ -8,6 +8,8 @@ import sys
 import yaml
 
 from sitetool.core.sitetool import SiteTool
+import warnings
+#from Crypto.pct_warnings import RandomPool_DeprecationWarning
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +33,7 @@ class Bootstrap():
         #    return
         #for key, val in st.config['CF_LOGGING'].items():
         #    logging.getLogger(key).setLevel(logging.getLevelName(val))
-
+        warnings.filterwarnings(action='ignore',module='.*paramiko.*')
         logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
     def parse_args(self, st):
