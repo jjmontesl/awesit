@@ -54,11 +54,14 @@ class LocalFiles():
             #print((len(path) - 1) * '---', os.path.basename(root))
             for file in files:
                 #print(file)
-                stats = os.stat(os.path.join(root, file))
-                result.append((root, file,
-                               stats[stat.ST_SIZE],
-                               datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]),
-                               datetime.datetime.fromtimestamp(stats[stat.ST_MTIME])))
+                try:
+                    stats = os.stat(os.path.join(root, file))
+                    result.append((root, file,
+                                   stats[stat.ST_SIZE],
+                                   datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]),
+                                   datetime.datetime.fromtimestamp(stats[stat.ST_MTIME])))
+                except Exception as e:
+                    logger.warn(e)
 
         return result
 

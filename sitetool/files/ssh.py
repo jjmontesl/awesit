@@ -76,24 +76,30 @@ class SSHFiles():
     def file_list(self, remote_path, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
+        logger.debug("Listing files through SSH: %s@%s:%s", self.get_user(), self.host, final_path)
 
         # FIXME: Redirect output to file and get file through get to avoid spurious outputs to stdout breaking find outuput
         with fabric.Connection(host=self.host, user=self.get_user()) as c:
             output = None
             try:
                 if self.sudo:
-                    output = c.sudo('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)
+                    output = c.sudo('[ -d "%s" ] && cd "%s" && sudo find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
                 else:
-                    output = c.run('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)
+                    output = c.run('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # not self.st.debug, echo=not self.st.debug)
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
+                logger.warn("Error while listing files through SSH: %s" % e)
                 output = ''
 
         result = []
         for line in output.split("\n"):
             if not line: continue
-            (ctime, mtime, size, path) = line.split(",", 3)
+            try:
+                (ctime, mtime, size, path) = line.split(",", 3)
+            except Exception as e:
+                logger.warn("Error parsing SSH file list data: %s (line: %r)" % (e, line))
+                continue
             result.append((os.path.dirname(path),
                            os.path.basename(path),
                            int(size),

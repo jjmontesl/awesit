@@ -3,6 +3,8 @@ import requests
 import webbrowser
 import yaml
 
+import humanize
+
 
 class Site():
     '''
@@ -39,6 +41,18 @@ class SiteManager():
 
         return sites
 
+    def calculate_site_size(self, site):
+        files = site['files'].file_list('')
+        count = 0
+        size = 0
+        last_date = 0
+        for file in files:
+            count += 1
+            size += file[2]
+            last_date = file[3] if not last_date or file[3] > last_date else last_date
+
+        return {'count': count, 'size': size, 'dt_modification': last_date}
+
 
 class SitesListCommand():
     '''
@@ -46,20 +60,20 @@ class SitesListCommand():
     def __init__(self, sitetool):
         self.st = sitetool
         self.src = None
-        self.size = False
+        self.files = False
         self.backups = False
 
     def parse_args(self, args):
 
         parser = argparse.ArgumentParser(prog="sitetool sites", description='Show configured sites and environments')
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
-        #parser.add_argument("-s", "--size", action="store_true", default=False, help="calculate site files size")
+        parser.add_argument("-f", "--files", action="store_true", default=False, help="calculate site files size")
         parser.add_argument("-b", "--backups", action="store", type=str, nargs='?', const="*:default", default=None, help="show backups information (optionally use a filter *:*)")
 
         args = parser.parse_args(args)
 
         self.src = args.source
-        #self.size = args.size
+        self.files = args.files
         self.backups = args.backups
 
         if self.backups == '':
@@ -89,12 +103,21 @@ class SitesListCommand():
             key = (site['site']['name'], site['name'])
             backup = backups.get(key, None)
 
-            if self.backups:
+            if self.files:
+                size_data = self.st.sites.calculate_site_size(site)
+                print("%-20s [%7.1fM / %5s files] (%s) %s" %
+                      (("%s:%s" % (site['site']['name'], site['name'])),
+                       size_data['size'] / (1024 * 1024) if size_data else 0,
+                       size_data['count'] if size_data else 0,
+                       humanize.naturaltime(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-',
+                       site['files'].path))
+            # TODO: Allow options together
+            elif self.backups:
                 print("%-20s [%6.1fM / %3s backups] %s" %
                       (("%s:%s" % (site['site']['name'], site['name'])),
-                                   backup.size / (1024 * 1024) if backup else 0,
-                                   backup.count if backup else 0,
-                                   site['url'] if 'url' in site else '-'))
+                       backup.size / (1024 * 1024) if backup else 0,
+                       backup.count if backup else 0,
+                       site['url'] if 'url' in site else '-'))
             else:
                 print("%-20s %s" % (("%s:%s" % (site['site']['name'], site['name'])),
                                     site['url'] if 'url' in site else '-'))

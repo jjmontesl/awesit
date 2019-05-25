@@ -24,12 +24,12 @@ class Bootstrap():
         # In absence of file config
         default_level = logging.INFO if not st.debug else logging.DEBUG
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
-        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
 
         if st.debug:
-            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
+            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
+            #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         else:
             logging.basicConfig(format='%(message)s', level=default_level)
 
@@ -42,6 +42,7 @@ class Bootstrap():
         #    logging.getLogger(key).setLevel(logging.getLevelName(val))
         warnings.filterwarnings(action='ignore',module='.*paramiko.*')
         logging.getLogger('paramiko.transport').setLevel(logging.WARN)
+        logging.getLogger('invoke').setLevel(logging.WARN)
 
     def parse_args(self, st):
 
