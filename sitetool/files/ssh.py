@@ -77,6 +77,7 @@ class SSHFiles():
 
         final_path = os.path.join(self.path, remote_path)
 
+        # FIXME: Redirect output to file and get file through get to avoid spurious outputs to stdout breaking find outuput
         with fabric.Connection(host=self.host, user=self.get_user()) as c:
             output = None
             try:

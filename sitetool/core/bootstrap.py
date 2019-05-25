@@ -25,7 +25,14 @@ class Bootstrap():
         default_level = logging.INFO if not st.debug else logging.DEBUG
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=default_level)
         #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
+        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
+        #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
+
+        if st.debug:
+            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
+        else:
+            logging.basicConfig(format='%(message)s', level=default_level)
+
 
     def configure_logging(self, st):
 

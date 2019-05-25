@@ -38,6 +38,7 @@ setup(
         "fs >= 0.3.0",
         "dateutils >= 0.6.6",
         "fabric >= 2.4.0",
+        "humanize >= 0.5.1"
     ],
 
     entry_points={'console_scripts': ['sitetool=sitetool.core.bootstrap:main']},

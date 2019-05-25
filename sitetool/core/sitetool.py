@@ -5,9 +5,11 @@
 import logging
 import datetime
 
-from sitetool.files.backup import BackupCommand, BackupListCommand
+from sitetool.files.backup import BackupCommand, BackupListCommand, BackupDeleteCommand,\
+    BackupManager
 from sitetool.files.deploy import DeployCommand
 from sitetool.browser import BrowserCommand
+from sitetool.sites import SiteManager, SitesListCommand
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +23,23 @@ class SiteTool():
     config = None
     config_path = None
 
-    commands = {'backup': BackupCommand,
+    commands = {'sites': SitesListCommand,
+
+                'backup': BackupCommand,
                 'backup-list': BackupListCommand,
+                'backup-delete': BackupDeleteCommand,
 
                 'deploy': DeployCommand,
+
+                #'joomla-list': JoomlaListCommand, ? (w/ extensions, status, etc...)
+                #'joomla-upgrade': JoomlaExtensionsUpgradeCommand,
+                #'joomla-checks-': (? install folder, etc?)
+                #'joomla-ext-list': JoomlaExtensionsListCommand,
+                #'joomla-ext-upgrade': JoomlaExtensionsUpgradeCommand, (in upgrade ?)
+                #'joomla-ext-install': JoomlaExtensionsInstallCommand,
+
+                #'joomla-data-export': JoomlaExportCommand, ? (or generic export/import providers, writing objects to disk?)
+                #'joomla-data-import': JoomlaImportCommand, ?
 
                 'browser': BrowserCommand}
 
@@ -46,6 +61,9 @@ class SiteTool():
             for env_name, env in site['envs'].items():
                 env['name'] = env_name
                 env['site'] = site
+
+        self.sites = SiteManager(self)
+        self.backupmanager = BackupManager(self)
 
     def run(self, command):
         logger.info("Running: %s", command)
