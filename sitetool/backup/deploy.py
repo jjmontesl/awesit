@@ -4,16 +4,17 @@ import argparse
 import datetime
 import logging
 import os
-
-from sitetool.files.backup import BackupManager
-from sitetool.sites import Site
 import sys
+
+from sitetool.backup.backup import BackupListCommand
+from sitetool.backup.backup import BackupManager
+from sitetool.sites import Site
 
 
 logger = logging.getLogger(__name__)
 
 
-class DeployCommand():
+class BackupDeployCommand():
     '''
     '''
     def __init__(self, sitetool):
@@ -22,19 +23,27 @@ class DeployCommand():
     def parse_args(self, args):
 
         parser = argparse.ArgumentParser(description='Deploys a backup to a given environment')
-        parser.add_argument("source", help="backupsite:env:site:env - source backup and backed up environment")
+        parser.add_argument("source", help="backupsite:env:site:env:sel - source backup and backed up environment")
         parser.add_argument("target", help="site:env - target backup site and environment")
+        parser.add_argument("-l", "--list", action="store_true", default=False, help="list backups that would be deleted and exit")
 
         args = parser.parse_args(args)
 
         self.src = args.source
         self.dst = args.target
+        self.list = args.list
 
     def run(self):
         """
         A backup copies different items (files, databases...) and generates
         a single "archived artifact" for each.
         """
+
+        if self.list:
+            logger.info("Listing backups that would be selected by this filter:")
+            command = BackupListCommand(self.st)
+            command.src = self.src
+            return command.run()
 
         self.ctx = self.st.config
         backupmanager = BackupManager(self.st)
@@ -64,7 +73,14 @@ class DeployCommand():
         backup_path = '%s/%s/%s' % (src_site['site']['name'], src_site['name'], job.filename)
         tmpfile_path = backup_site['files'].file_get(backup_path)
 
-        target_site['files'].restore(tmpfile_path)
-        os.unlink(tmpfile_path)
+        # TODO: type shall be defined by BackupManager
+        if job.filename.endswith('-files.tar.gz'):
 
-        # Restore database
+            target_site['files'].restore(tmpfile_path)
+            os.unlink(tmpfile_path)
+
+        elif job.filename.endswith('-db.tar.gz'):
+
+            target_site['db'].restore(tmpfile_path)
+            os.unlink(tmpfile_path)
+

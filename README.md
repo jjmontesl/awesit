@@ -49,9 +49,14 @@ sitetool <command> [options...] [-h]
 sitetool backup testsite1:prod backup:default --db --files
 sitetool backup backup:default:-5d testsite1:dev --db
 
-sitetool deploy backup:default :dev
-sitetool deploy testsite1:prod :dev
+sitetool backup-deploy testsite1:prod :dev
+
+sitetool deploy backup:main/site:env site:dev
 sitetool deploy backup:default:testsite1:dev:-5d testsite1:dev --artifacts=files
+
+sitetool git-deploy
+sitetool deploy git: ///home/user/ :default:testsite1:dev:-5d testsite1:dev --artifacts=files
+git?? (could it act as a source, like backup?)
 
 sitetool backup-list
 
@@ -60,8 +65,6 @@ sitetool backup-diff backup:default:testsite1:prod:
 sitetool joomla-data-merge testsite1:dev :prod --models:articles,products --overwrite --noop
 sitetool joomla-data-export --format:filedir testsite1:prod ~/sites/testsite1 --models:articles,categories
 sitetool joomla-datadir?-import --format:filedir ~/sites/testsite1 testsite1:prod --models:articles,categories --background
-
-git?? (could it act as a source, like backup?)
 
 sitetool joomla-extension-install testsite1:dev <extension.zip>
 sitetool joomla-extension-list *:prod  # testsite1:dev  # List extensions and versions and upgrades

@@ -60,6 +60,7 @@ class SitesListCommand():
     def __init__(self, sitetool):
         self.st = sitetool
         self.src = None
+        self.info = False
         self.files = False
         self.backups = False
 
@@ -67,14 +68,16 @@ class SitesListCommand():
 
         parser = argparse.ArgumentParser(prog="sitetool sites", description='Show configured sites and environments')
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
+        parser.add_argument("-i", "--info", action="store_true", default=False, help="show site configuration info")
         parser.add_argument("-f", "--files", action="store_true", default=False, help="calculate site files size")
-        parser.add_argument("-b", "--backups", action="store", type=str, nargs='?', const="*:default", default=None, help="show backups information (optionally use a filter *:*)")
+        parser.add_argument("-b", "--backups", action="store", type=str, nargs='?', const="*:main", default=None, help="show backups information (optionally use a filter *:*)")
 
         args = parser.parse_args(args)
 
         self.src = args.source
         self.files = args.files
         self.backups = args.backups
+        self.info = args.info
 
         if self.backups == '':
             self.backups = False
@@ -121,5 +124,13 @@ class SitesListCommand():
             else:
                 print("%-20s %s" % (("%s:%s" % (site['site']['name'], site['name'])),
                                     site['url'] if 'url' in site else '-'))
+
+            if self.info:
+                if 'db' in site:
+                    print("  - db:    %s (%s)" % (site['db'].db, site['db'].__class__.__name__))
+                print("  - files: %s (%s)" % (site['files'].path, site['files'].__class__.__name__))
+                if 'git' in site:
+                    print("  - git:   branch '%s'" % (site['git'].branch))
+                print()
 
         print("Listed sites: %d" % (count))

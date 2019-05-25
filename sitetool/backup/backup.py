@@ -27,7 +27,7 @@ class BackupCommand():
 
         parser = argparse.ArgumentParser(description='Perform a files backup from a given site')
         parser.add_argument("src", help="site:env - source site and environment")
-        parser.add_argument("dst", nargs='?', default='backup:default', help="site:env - target backup site and environment")
+        parser.add_argument("dst", nargs='?', default='backup:main', help="site:env - target backup site and environment")
 
         args = parser.parse_args(args)
 
@@ -72,21 +72,33 @@ class BackupCommand():
         backup_site['files'].file_put(tmpfile_path, backup_path)
 
         src_site['files'].file_delete(files_path)
+        os.unlink(tmpfile_path)
 
         # Copy database
         if 'db' in src_site:
-            self._backup_database(src_site)
+            self._backup_database(src_site, backup_job_name)
 
         backup_time = (datetime.datetime.utcnow() - dt_start).total_seconds()
-
         logger.info("Backup finished (time: %.1fm, size=%.2fM)", backup_time / 60.0, backup_size / (1024 * 1024))
 
-    def _backup_database(self, src_site):
+    def _backup_database(self, src_site, backup_job_name):
 
-        db_path = src_site['db'].dump()
-        logger.info("Backup db path: %s", db_path)
+        logger.info("Backup DB for: %s", self.src)
+
+        (tmpdb_path, tmpdb_hash) = src_site['db'].dump()
+        logger.debug("Backup DB result path: %s", tmpdb_path)
+
+        (src_site_name, src_site_env) = Site.parse_site_env(self.src)
+        (backup_site_name, backup_site_env) = Site.parse_site_env(self.dst)
 
         # Copy database file to place
+        backup_site = self.ctx['sites'][backup_site_name]['envs'][backup_site_env]
+        #backup_root_dir = '/home/jjmontes/sitetool/backup/'
+        backup_path = '%s/%s/%s-%s-%s-db.tar.gz' % (src_site_name, src_site_env, src_site_name, src_site_env, backup_job_name)
+
+        backup_site['files'].file_put(tmpdb_path, backup_path)
+
+        os.unlink(tmpdb_path)
 
 
 class BackupDeleteCommand():
@@ -100,6 +112,7 @@ class BackupDeleteCommand():
         parser = argparse.ArgumentParser(prog="sitetool backup-delete", description='Delete backup jobs data (use with caution!)')
         parser.add_argument("backup", default=None, help="backupsite:env:site:env:sel - backup(s) to delete")
         parser.add_argument("-m", "--many", action="store_true", default=False, help="allow deleting more than one backup")
+        #parser.add_argument("-y", "--yes", action="store_true", default=False, help="allow deleting more than one backup")
         parser.add_argument("-l", "--list", action="store_true", default=False, help="list backups that would be deleted and exit")
 
         args = parser.parse_args(args)
@@ -199,10 +212,11 @@ class BackupListCommand():
             #md5.update(backup.env_site['name'].encode('utf-8'))
             #md5.update(backup.filename.encode('utf-8'))
             total_size += backup.size
-            print("%5d %20s %20s %6.1fMB %s (%s)" % (backup.index if backup.index is not None else backup.count,
+            print("%20s %20s %5d %7.1fM %s (%s)" % (
                                                 #md5.hexdigest()[:6],
                                                ("%s:%s" % (backup.env_backup['site']['name'], backup.env_backup['name'])) if backup.env_backup else '-',
                                                ("%s:%s" % (backup.env_site['site']['name'], backup.env_site['name'])),
+                                               backup.index if backup.index is not None else backup.count,
                                                backup.size / (1024 * 1024),
                                                backup.filename or '-',
                                                backup.dt_create if self.exact_time else humanize.naturaltime(backup.dt_create)))
@@ -213,11 +227,11 @@ class BackupListCommand():
 class BackupJob(namedtuple('BackupJob', 'env_backup env_site root filename dt_create size index count')):
 
     def __str__(self):
-        return ("%s:%s:%s:%s:%s" % (self.index,
-                                    self.env_backup['site']['name'],
+        return ("%s:%s:%s:%s:%s" % (self.env_backup['site']['name'],
                                     self.env_backup['name'],
                                     self.env_site['site']['name'],
-                                    self.env_site['name']))
+                                    self.env_site['name'],
+                                    self.index))
 
 
 class BackupManager():
@@ -300,11 +314,26 @@ class BackupManager():
             job
 
         if job_expr.startswith('-') and jobs:
-            idx = int(job_expr)
-            if (-idx <= len(jobs)):
-                jobs = [jobs[idx]]
+            if '-' in job_expr[1:]:
+                # Range
+                idx_a = job_expr[1:].split("-")[0]
+                idx_b = job_expr[1:].split("-")[1]
+
+                if idx_a and idx_b:
+                    if int(idx_b) > int(idx_a):
+                        (idx_a, idx_b) = (idx_b, idx_a)
+                    jobs = jobs[-int(idx_a) : -int(idx_b) + 1]
+                elif idx_a:
+                    jobs = jobs[-int(idx_a):]
+                else:
+                    jobs = jobs[:-int(idx_b) + 1]
             else:
-                jobs = []
+                # Single index
+                idx = int(job_expr)
+                if (-idx <= len(jobs)):
+                    jobs = [jobs[idx]]
+                else:
+                    jobs = []
 
         return jobs
 

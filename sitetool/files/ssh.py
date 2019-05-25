@@ -22,7 +22,9 @@ class SSHFiles():
     path = None
 
     user = None
+    password = None
     host = None
+    port = 22
 
     sudo = False
 
@@ -43,7 +45,7 @@ class SSHFiles():
         final_path = os.path.join(self.path, remote_path)
         logger.info("Getting file via SSH from %s@%s:%s to %s", self.get_user(), self.host, final_path, local_path)
 
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             c.get(final_path, local_path)
 
         return local_path
@@ -54,20 +56,20 @@ class SSHFiles():
 
         # Create dir
         dirname = os.path.dirname(final_path)
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             if self.sudo:
                 c.sudo('mkdir -p "%s"' % dirname)
             else:
                 c.run('mkdir -p "%s"' % dirname)
 
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             result = c.put(local_path, final_path)
 
     def file_delete(self, remote_path):
         final_path = os.path.join(self.path, remote_path)
         logger.debug("Deleting via SSH: %s@%s:%s", self.get_user(), self.host, final_path)
 
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             if self.sudo:
                 c.sudo('rm "%s"' % final_path)
             else:
@@ -79,7 +81,7 @@ class SSHFiles():
         logger.debug("Listing files through SSH: %s@%s:%s", self.get_user(), self.host, final_path)
 
         # FIXME: Redirect output to file and get file through get to avoid spurious outputs to stdout breaking find outuput
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             output = None
             try:
                 if self.sudo:
@@ -89,7 +91,7 @@ class SSHFiles():
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
-                logger.warn("Error while listing files through SSH: %s" % e)
+                #logger.warn("Error while listing files through SSH: %s" % e)
                 output = ''
 
         result = []
@@ -112,12 +114,12 @@ class SSHFiles():
         """
         Archives files and provides a remote path for the archive file.
         """
-        logger.info("Archiving files through SSH from %s@%s:%s", self.get_user(), self.host, self.path)
+        logger.info("Archiving files through SSH from %s@%s[%s]:%s", self.get_user(), self.host, self.port, self.path)
         backup_path = "/tmp/sitetool-files-backup.tgz"
 
         backup_md5sum = None
 
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             if self.sudo:
                 c.sudo("tar czf %s -C %s ." % (backup_path, self.path))
             else:
@@ -137,10 +139,11 @@ class SSHFiles():
 
         # Create dir
         dirname = final_path
-        with fabric.Connection(host=self.host, user=self.get_user()) as c:
+        with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             if self.sudo:
                 c.sudo('mkdir -p "%s"' % dirname)
+                c.sudo('tar xf %s -C %s' % (backup_path, dirname))
             else:
                 c.run('mkdir -p "%s"' % dirname)
+                c.run('tar xf %s -C %s' % (backup_path, dirname))
 
-        subprocess.call(["tar", "xf", path, '-C', dirname])
