@@ -24,92 +24,108 @@ Lean Canvas Tasks:
 
 Sitetool requires information about the environments it manages.
 
-  BACKUP_PATH = '/home/$user/sitetool/backups/'
-  WORKINGDIR_PATH = '/home/$user/sitetool/sites/'
-
-Configuration is done in YAML format. It is recommended to keep
+Configuration is done in YAML format. Configuration may eventually
+include templates and other files. It is recommended to keep
 your sitetool configuration versioned.
+
+SiteTool reads by default configuration from user home `~/.sitetool.conf . This
+can be changed using the `-c` command line option.
+
+You can find an example configuration in the `sitetool.conf.sample` file.
+Copy it to your home `~/.sitetool.conf` and **modify it** to reflect the
+sites you will be managing.
 
 
 ## Usage
 
-sitetool <command> [options...] [-h]
+    usage: sitetool [-h] [-d] [-c CONFIG] command [command options]
 
-  sitetool backup testsite1:prod backup:local
-  sitetool backup testsite1:prod backup:local2
+      Commands:
+        backup-list
+        backup
+        deploy
+        backup-delete
+        sites
+        browser
+        backup-deploy
 
-  sitetool deploy site1 backup-local 5d site1:dev
-  sitetool deploy site1:prod site1:dev  # Pa nota
+    positional arguments:
+      command               subcommand to run
 
-  sitetool listbackup backups site1 (?)
+    optional arguments:
+      -d, --debug           debug logging
+      -c CONFIG, --config CONFIG
+                            config file
 
 
 ## Commands
 
-sitetool backup testsite1:prod backup:default --db --files
-sitetool backup backup:default:-5d testsite1:dev --db
+    $ # List your configured sites, computing their size
+    $ sitetool sites -f
 
-sitetool backup-deploy testsite1:prod :dev
-
-sitetool deploy backup:main/site:env site:dev
-sitetool deploy backup:default:testsite1:dev:-5d testsite1:dev --artifacts=files
-
-sitetool git-deploy
-sitetool deploy git: ///home/user/ :default:testsite1:dev:-5d testsite1:dev --artifacts=files
-git?? (could it act as a source, like backup?)
-
-sitetool backup-list
-
-sitetool backup-diff backup:default:testsite1:prod:
-
-sitetool joomla-data-merge testsite1:dev :prod --models:articles,products --overwrite --noop
-sitetool joomla-data-export --format:filedir testsite1:prod ~/sites/testsite1 --models:articles,categories
-sitetool joomla-datadir?-import --format:filedir ~/sites/testsite1 testsite1:prod --models:articles,categories --background
-
-sitetool joomla-extension-install testsite1:dev <extension.zip>
-sitetool joomla-extension-list *:prod  # testsite1:dev  # List extensions and versions and upgrades
-
-sitetool browser testsite1:prod
+    backup:main      [ 4865.9M /    17 files] (an hour ago) ~/sitetool/backup/
+    backup:testssh   [    8.5M /     2 files] (16 minutes ago) /tmp/sitetoolbackup/
+    site1:prod       [  201.7M /  1089 files] (11 hours ago) /opt/site1
+    site2:prod       [  409.5M / 12816 files] (37 minutes ago) /opt/site2
+    site2:tmp        [    0.0M /     0 files] (-) /tmp/site2/
+    site3:dev        [   43.8M /  1037 files] (3 months ago) ~/git/site3-page/
+    site3:prod       [   34.4M /   152 files] (2 years ago) /opt/site3-page
+    site3:tmp        [   34.4M /   152 files] (20 hours ago) /tmp/site3/
+    ...
+    Listed sites: 14
 
 
-## Examples
+    $ # Backup a site (to the default storage: `backup:main`)
+    $ sitetool backup site1:prod
 
-** Copy a site from production for local development **
+    $ # Backup a site to a different storage
+    $ sitetool backup site1:prod backup:external-hd
 
-** Push changes to Joomla articles to preproduction **
+    $ # List backups
+    $ sitetool backup-list
 
-** Restore an entire site from a backup **
+    backup:main           site1:prod    -1   318.7M site1-prod-20190524-215511-files.tar.gz (19 hours ago)
+    backup:main           site2:prod    -1  1992.8M site2-prod-20190524-214501-files.tar.gz (19 hours ago)
+    backup:main           site3:prod    -1   113.7M site3-prod-20190525-000025-files.tar.gz (17 hours ago)
+    backup:main        gitolite:prod    -1  2248.7M gitolite-prod-20190525-002522-files.tar.gz (17 hours ago)
+    backup:main       testsite2:prod    -4     8.4M testsite2-prod-20190525-161658-files.tar.gz (an hour ago)
+    backup:main       testsite2:prod    -3     0.1M testsite2-prod-20190525-161658-db.tar.gz (an hour ago)
+    backup:main       testsite2:prod    -2     8.4M testsite2-prod-20190525-162048-files.tar.gz (an hour ago)
+    backup:main       testsite2:prod    -1     0.1M testsite2-prod-20190525-162048-db.tar.gz (an hour ago)
+    backup:testssh    testsite2:prod    -2     8.4M testsite2-prod-20190525-173754-files.tar.gz (21 minutes ago)
+    backup:testssh    testsite2:prod    -1     0.1M testsite2-prod-20190525-173754-db.tar.gz (21 minutes ago)
+    ...
+    Listed jobs: 19  Total size: 4874.4MB
 
-** Update joomla extension in a site **
+
+    # Deploy a site last backup to development environment
+    sitetool deploy ::site1:prod:-1 site1:dev
+
+    # Open a browser tab for a site
+    sitetool browser testsite1:prod
 
 
-## Backup
+    sitetool joomla-data-merge testsite1:dev :prod --models:articles,products --overwrite --noop
+    sitetool joomla-data-export --format:filedir testsite1:prod ~/sites/testsite1 --models:articles,categories
+    sitetool joomla-datadir?-import --format:filedir ~/sites/testsite1 testsite1:prod --models:articles,categories --background
 
-## Backup scheduling
+    sitetool joomla-extension-install testsite1:dev <extension.zip>
+    sitetool joomla-extension-list *:prod  # testsite1:dev  # List extensions and versions and upgrades
 
-TODO: Is this necessary? (wishlist or separate tool?)
 
-## Deployment
+## Documentation
+
 
 ## TODO:
 
-Analysis TODO:
+- Add complete file ignore support to local and ssh files (currently local uses ignores just for listing)
+- Use proper temporary names for files during backup/deploy/upload/download! (could be conflicts with current implementation)
+- Connect only once to each backup storage when exploring backups! (avoids hitting SSH connections)
 
-- https://github.com/2createStudio/shuttle-export
-- Separate database / files export (ie. php vs ftp vs ...)
-- "Driver type"? (files / database / configs-alterations-chain(joomla? prestashop?))
-- Enumerate drivers (and types / scope if applicable)
-- Actions: define pipeline/settings/scope for each action (backup, deploy... ???)
-- Improve config, complex scenario before starting
+- (?) https://github.com/2createStudio/shuttle-export
+- (?) How to deal with versioning? git before changes to be able to check diffs and and commits... (?) (files only, in principle?)
 
-- How to deal with versioning? git before changes to be able to check diffs and and commits... (?) (files only, in principle?)
+- (?) Backup scheduling
+- (?) Monitoring: response times, check health (ie via PHP tool or custom regexps on URLs)
+- (?) Containers, Virtualization, Other tools... (Docker / Lando)
 
-Wishlist TODO:
-
-- Evolution towards merging data (or files, or media!) from
-  specific applications/modules (merge/update Joomla articles, Prestashop etc)
-- Stress ability to merge/extract from files or directories
-- Monitoring: response times, check health (ie via PHP tool or custom regexps on URLs)
-- Drivers/Tools to synchronzie from other strategies??? (ie. filesystem-folders -> joomla articles)
-- Containers, Virtualization, Other tools... (Docker / Lando) - local first for dev envs
-- Selenium integration?

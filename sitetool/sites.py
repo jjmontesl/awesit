@@ -101,7 +101,7 @@ class SitesListCommand():
                 backups[key] = job
 
         count = 0
-        for site in sites:
+        for site in sorted(sites, key=lambda x: (x['site']['name'], x['name'])):
             count += 1
             key = (site['site']['name'], site['name'])
             backup = backups.get(key, None)

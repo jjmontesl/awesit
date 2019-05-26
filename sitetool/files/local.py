@@ -19,6 +19,7 @@ class LocalFiles():
     '''
 
     path = None
+    ignore = None
 
     def file_get(self, remote_path):
         local_path = tempfile.mktemp(prefix='sitetool-tmp-')
@@ -54,6 +55,19 @@ class LocalFiles():
             #print((len(path) - 1) * '---', os.path.basename(root))
             for file in files:
                 #print(file)
+
+                file_path_abs = os.path.join(root, file)
+                file_path_rel = "/" + file_path_abs[len(final_path):]
+
+                matches = False
+                if self.ignore:
+                    for ignore in self.ignore:
+                        if file_path_rel.startswith(ignore):
+                            matches = True
+                            break
+                if matches:
+                    continue
+
                 try:
                     stats = os.stat(os.path.join(root, file))
                     result.append((root, file,

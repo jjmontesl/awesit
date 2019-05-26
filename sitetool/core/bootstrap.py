@@ -48,7 +48,7 @@ class Bootstrap():
 
         usage = 'sitetool [-h] [-d] [-c CONFIG] command [command options]\n\n'
         usage = usage + "  Commands:\n"
-        for command_name, command in st.commands.items():
+        for command_name, command in sorted(st.commands.items()):
             usage = usage + "    %s\n" % (command_name)
 
         parser = argparse.ArgumentParser(usage=usage, add_help=False)  # description='', usage = ''
@@ -137,7 +137,7 @@ class Bootstrap():
         except KeyboardInterrupt as e:
             logger.info("Process interrupted by keyboard interrupt.")
 
-        logger.debug("Service finishing.")
+        logger.debug("Program finished.")
 
 
 def main():
