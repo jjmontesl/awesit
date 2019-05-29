@@ -31,6 +31,7 @@ class Bootstrap():
             logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', level=default_level)
             #logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=default_level)
         else:
+            #logging.basicConfig(format='%(asctime)s %(message)s', level=default_level)
             logging.basicConfig(format='%(message)s', level=default_level)
 
 
@@ -49,7 +50,7 @@ class Bootstrap():
         usage = 'sitetool [-h] [-d] [-c CONFIG] command [command options]\n\n'
         usage = usage + "  Commands:\n"
         for command_name, command in sorted(st.commands.items()):
-            usage = usage + "    %s\n" % (command_name)
+            usage = usage + "    %-20s %s\n" % (command_name, getattr(command, 'COMMAND_DESCRIPTION', ''))
 
         parser = argparse.ArgumentParser(usage=usage, add_help=False)  # description='', usage = ''
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
@@ -137,7 +138,7 @@ class Bootstrap():
         except KeyboardInterrupt as e:
             logger.info("Process interrupted by keyboard interrupt.")
 
-        logger.debug("Program finished.")
+        #logger.debug("Program finished.")
 
 
 def main():

@@ -17,15 +17,18 @@ logger = logging.getLogger(__name__)
 class BackupDeployCommand():
     '''
     '''
+
+    COMMAND_DESCRIPTION = 'Deploys a backup to a given environment'
+
     def __init__(self, sitetool):
         self.st = sitetool
 
     def parse_args(self, args):
 
-        parser = argparse.ArgumentParser(description='Deploys a backup to a given environment')
-        parser.add_argument("source", help="backupsite:env:site:env:sel - source backup and backed up environment")
-        parser.add_argument("target", help="site:env - target backup site and environment")
-        parser.add_argument("-l", "--list", action="store_true", default=False, help="list backups that would be deleted and exit")
+        parser = argparse.ArgumentParser(description=self.COMMAND_DESCRIPTION)
+        parser.add_argument("source", help="[backupsite:env:]site:env:job - source backup job")
+        parser.add_argument("target", nargs='?', help="site:env - target deployment site and environment")
+        parser.add_argument("-l", "--list", action="store_true", default=False, help="list the selected backup(s) and exit")
 
         args = parser.parse_args(args)
 
@@ -70,16 +73,17 @@ class BackupDeployCommand():
         target_site = self.ctx['sites'][target_site_name]['envs'][target_site_env]
 
         # Copy and restore files
-        backup_path = '%s/%s/%s' % (src_site['site']['name'], src_site['name'], job.filename)
+        job_filename = os.path.basename(job.relpath)
+        backup_path = '%s/%s/%s' % (src_site['site']['name'], src_site['name'], job_filename)
         tmpfile_path = backup_site['files'].file_get(backup_path)
 
         # TODO: type shall be defined by BackupManager
-        if job.filename.endswith('-files.tar.gz'):
+        if job_filename.endswith('-files.tar.gz'):
 
             target_site['files'].restore(tmpfile_path)
             os.unlink(tmpfile_path)
 
-        elif job.filename.endswith('-db.tar.gz'):
+        elif job_filename.endswith('-db.tar.gz'):
 
             target_site['db'].restore(tmpfile_path)
             os.unlink(tmpfile_path)

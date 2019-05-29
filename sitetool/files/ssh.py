@@ -1,15 +1,19 @@
 # SiteTool
 
+from dateutil import tz
+import datetime
 import getpass
 import logging
 import os
+import pytz
 import subprocess
 import tempfile
-
-import fabric
-from sitetool.core.exceptions import SiteToolException
-import datetime
 import warnings
+
+from sitetool.core.exceptions import SiteToolException
+from sitetool.files.files import SiteFile
+import fabric
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +24,7 @@ class SSHFiles():
     '''
 
     path = None
+    exclude = None
 
     user = None
     password = None
@@ -40,9 +45,10 @@ class SSHFiles():
             return getpass.getuser()
         return self.user
 
-    def file_get(self, remote_path):
+    def file_get(self, remote_path, base_path=None):
+        if base_path is None: base_path = self.path
+        final_path = os.path.join(base_path, remote_path)
         local_path = tempfile.mktemp(prefix='sitetool-tmp-')
-        final_path = os.path.join(self.path, remote_path)
         logger.info("Getting file via SSH from %s@%s:%s to %s", self.get_user(), self.host, final_path, local_path)
 
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
@@ -65,8 +71,9 @@ class SSHFiles():
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             result = c.put(local_path, final_path)
 
-    def file_delete(self, remote_path):
-        final_path = os.path.join(self.path, remote_path)
+    def file_delete(self, remote_path, base_path="/"):
+        if base_path is None: base_path = self.path
+        final_path = os.path.join(base_path, remote_path)
         logger.debug("Deleting via SSH: %s@%s:%s", self.get_user(), self.host, final_path)
 
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
@@ -85,9 +92,9 @@ class SSHFiles():
             output = None
             try:
                 if self.sudo:
-                    output = c.sudo('[ -d "%s" ] && cd "%s" && sudo find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
+                    output = c.sudo('[ -d "%s" ] && cd "%s" && sudo TZ=utc find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
                 else:
-                    output = c.run('[ -d "%s" ] && cd "%s" && find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # not self.st.debug, echo=not self.st.debug)
+                    output = c.run('[ -d "%s" ] && cd "%s" && TZ=utc find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # not self.st.debug, echo=not self.st.debug)
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
@@ -102,11 +109,23 @@ class SSHFiles():
             except Exception as e:
                 logger.warn("Error parsing SSH file list data: %s (line: %r)" % (e, line))
                 continue
-            result.append((os.path.dirname(path),
-                           os.path.basename(path),
-                           int(size),
-                           datetime.datetime.strptime(ctime.split(".")[0], '%Y-%m-%d+%H:%M:%S'),
-                           datetime.datetime.strptime(mtime.split(".")[0], '%Y-%m-%d+%H:%M:%S')))
+
+            file_path_abs = path
+            file_path_rel = "/" + file_path_abs[len(final_path):]
+
+            matches = False
+            if self.exclude:
+                for exclude in self.exclude:
+                    if file_path_rel.startswith(exclude):
+                        matches = True
+                        break
+            if matches:
+                continue
+
+            mtime = datetime.datetime.strptime(ctime.split(".")[0], '%Y-%m-%d+%H:%M:%S')
+            mtime = mtime.replace(tzinfo=pytz.utc)
+
+            result.append(SiteFile(file_path_rel, int(size), mtime))
 
         return result
 
@@ -114,16 +133,20 @@ class SSHFiles():
         """
         Archives files and provides a remote path for the archive file.
         """
-        logger.info("Archiving files through SSH from %s@%s[%s]:%s", self.get_user(), self.host, self.port, self.path)
-        backup_path = "/tmp/sitetool-files-backup.tgz"
+        logger.info("Archiving files through SSH from %s@%s:%s/%s", self.get_user(), self.host, self.port, self.path)
+
+        remote_backup_path = tempfile.mktemp(prefix='sitetool-tmp-files-remote-backup-')  # FIXME: shall be a remote tmporary file
 
         backup_md5sum = None
 
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
             if self.sudo:
-                c.sudo("tar czf %s -C %s ." % (backup_path, self.path))
+                c.sudo("tar czf %s -C %s ." % (remote_backup_path, self.path))
             else:
-                c.run("tar czf %s -C %s ." % (backup_path, self.path))
+                c.run("tar czf %s -C %s ." % (remote_backup_path, self.path))
+
+        backup_path = self.file_get(remote_backup_path, base_path="/")
+        self.file_delete(remote_backup_path, base_path="/")
 
         return (backup_path, backup_md5sum)
 

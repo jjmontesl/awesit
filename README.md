@@ -2,9 +2,19 @@
 
 Sitetool is a tool to manage website deployments and development.
 
-It manages information about Joomla deployments and provides
-methods to backup and deploy Joomla sites across different
-staging environments.
+It manages information about site deployments and provides
+methods to backup and deploy sites across different environments.
+
+Features:
+
+- Backup and restore files and databases across configured sites.
+- Backup and restore MySQL databases.
+- Manage different site environments (production, staging, development...).
+- Manage (list and delete) backup files and backup storages.
+- Access files locally or through SSH, SFTP, FTP, SFTP...
+- Access files and databases through a PHP helper script.
+
+(See the Examples section below for more information)
 
 
 # Requirements
@@ -58,7 +68,13 @@ sites you will be managing.
                             config file
 
 
-## Commands
+## Installation
+
+In order to use SiteTool, you must define a configuration file that describes
+your projects and deployment environments.
+
+
+## Examples
 
     $ # List your configured sites, computing their size
     $ sitetool sites -f
@@ -121,6 +137,8 @@ sites you will be managing.
 - Add complete file ignore support to local and ssh files (currently local uses ignores just for listing)
 - Use proper temporary names for files during backup/deploy/upload/download! (could be conflicts with current implementation)
 - Connect only once to each backup storage when exploring backups! (avoids hitting SSH connections)
+
+- Deploy files supporting diff and different merge strategies (ovewrite all, only newer, etc...).
 
 - (?) https://github.com/2createStudio/shuttle-export
 - (?) How to deal with versioning? git before changes to be able to check diffs and and commits... (?) (files only, in principle?)

@@ -5,6 +5,8 @@ import yaml
 
 import humanize
 
+from sitetool.core.util import timeago
+
 
 class Site():
     '''
@@ -42,14 +44,18 @@ class SiteManager():
         return sites
 
     def calculate_site_size(self, site):
-        files = site['files'].file_list('')
+
         count = 0
         size = 0
         last_date = 0
-        for file in files:
-            count += 1
-            size += file[2]
-            last_date = file[3] if not last_date or file[3] > last_date else last_date
+
+        if 'files' in site:
+            files = site['files'].file_list('')
+            if files:
+                for file in files:
+                    count += 1
+                    size += file.size
+                    last_date = file.mtime if not last_date or file.mtime > last_date else last_date
 
         return {'count': count, 'size': size, 'dt_modification': last_date}
 
@@ -57,6 +63,9 @@ class SiteManager():
 class SitesListCommand():
     '''
     '''
+
+    COMMAND_DESCRIPTION = 'Show configured sites and environments'
+
     def __init__(self, sitetool):
         self.st = sitetool
         self.src = None
@@ -66,7 +75,7 @@ class SitesListCommand():
 
     def parse_args(self, args):
 
-        parser = argparse.ArgumentParser(prog="sitetool sites", description='Show configured sites and environments')
+        parser = argparse.ArgumentParser(prog="sitetool sites", description=self.COMMAND_DESCRIPTION)
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
         parser.add_argument("-i", "--info", action="store_true", default=False, help="show site configuration info")
         parser.add_argument("-f", "--files", action="store_true", default=False, help="calculate site files size")
@@ -112,14 +121,15 @@ class SitesListCommand():
                       (("%s:%s" % (site['site']['name'], site['name'])),
                        size_data['size'] / (1024 * 1024) if size_data else 0,
                        size_data['count'] if size_data else 0,
-                       humanize.naturaltime(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-',
+                       timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-',
                        site['files'].path))
             # TODO: Allow options together
             elif self.backups:
-                print("%-20s [%6.1fM / %3s backups] %s" %
+                print("%-20s [%6.1fM / %3s backups] (%s) %s" %
                       (("%s:%s" % (site['site']['name'], site['name'])),
                        backup.size / (1024 * 1024) if backup else 0,
                        backup.count if backup else 0,
+                       timeago(backup.dt_create) if backup else '-',
                        site['url'] if 'url' in site else '-'))
             else:
                 print("%-20s %s" % (("%s:%s" % (site['site']['name'], site['name'])),

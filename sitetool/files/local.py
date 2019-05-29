@@ -9,7 +9,9 @@ import tempfile
 import errno
 import stat
 import datetime
+from dateutil import tz
 
+from sitetool.files.files import SiteFile
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ class LocalFiles():
     '''
 
     path = None
-    ignore = None
+    exclude = None
 
     def file_get(self, remote_path):
         local_path = tempfile.mktemp(prefix='sitetool-tmp-')
@@ -60,20 +62,24 @@ class LocalFiles():
                 file_path_rel = "/" + file_path_abs[len(final_path):]
 
                 matches = False
-                if self.ignore:
-                    for ignore in self.ignore:
-                        if file_path_rel.startswith(ignore):
+                if self.exclude:
+                    for exclude in self.exclude:
+                        if file_path_rel.startswith(exclude):
                             matches = True
                             break
                 if matches:
                     continue
 
+
                 try:
-                    stats = os.stat(os.path.join(root, file))
-                    result.append((root, file,
-                                   stats[stat.ST_SIZE],
-                                   datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]),
-                                   datetime.datetime.fromtimestamp(stats[stat.ST_MTIME])))
+                    stats = os.stat(file_path_abs)
+
+                    local_zone = tz.tzlocal()
+                    ctime_local = datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]).replace(tzinfo=local_zone)
+                    mtime_local = datetime.datetime.fromtimestamp(stats[stat.ST_MTIME]).replace(tzinfo=local_zone)
+
+                    result.append(SiteFile(file_path_rel, stats[stat.ST_SIZE], mtime_local))
+
                 except Exception as e:
                     logger.warn(e)
 
@@ -83,10 +89,12 @@ class LocalFiles():
         """
         Archives files and provide a path for the archive file.
         """
-        backup_path = "/tmp/sitetool-files-backup.tgz"
+        #backup_path = "/tmp/sitetool-files-backup.tgz"
+        backup_path = tempfile.mktemp(prefix='sitetool-tmp-files-backup-')
+        final_path = os.path.expanduser(os.path.join(self.path))
 
-        logger.info("Archiving files (local) from %s to %s", self.path, backup_path)
-        subprocess.call(["tar", "czf", backup_path, '-C', self.path, '.'])
+        logger.info("Archiving files (local) from %s to %s", final_path, backup_path)
+        subprocess.call(["tar", "czf", backup_path, '-C', final_path, '.'])
 
         backup_md5sum = None
 

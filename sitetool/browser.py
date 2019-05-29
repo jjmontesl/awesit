@@ -14,12 +14,14 @@ class BrowserCommand():
     '''
     '''
 
+    COMMAND_DESCRIPTION = 'Opens a browser tab pointing to a site'
+
     def __init__(self, sitetool):
         self.st = sitetool
 
     def parse_args(self, args):
 
-        parser = argparse.ArgumentParser(description='Opens a browser tab pointing to a site')
+        parser = argparse.ArgumentParser(description=self.COMMAND_DESCRIPTION)
         parser.add_argument("target", help="site:env - target site and environment")
 
         args = parser.parse_args(args)

@@ -28,7 +28,11 @@ function route_command($command) {
     if ($command == 'file_list') {
         $path = $_POST['path'];
         return file_list($path);
-    } else {
+    } else if ($command == 'file_backup') {
+        $path = $_POST['path'];
+        return file_backup($path);
+    }
+    else {
         http_response_code(404);
         die('Invalid command');
     }
@@ -42,17 +46,71 @@ function file_list($path) {
 
     foreach ($rii as $file) {
         if ($file->isDir()) continue;
-        $fileinfo = array($file->getCTime(), $file->getMTime(), $file->getSize(), $file->getPathname());
+        $ctime = gmdate('Y-m-d+H:i:s', $file->getCTime());
+        $mtime = gmdate('Y-m-d+H:i:s', $file->getMTime());
+        $fileinfo = array($ctime, $mtime, $file->getSize(), $file->getPathname());
         $files[] = $fileinfo;
     }
 
     return $files;
 }
 
+// Archive files in a directory recursively
+function file_backup($path) {
+
+    $archive_path = uniqid('sitetool-file-backup-') . '.tar';
+
+    $ar = new PharData($archive_path);
+    $ar->buildFromDirectory($path);
+
+    $ar->compress(Phar::GZ);
+
+    // Delete uncompressed tar
+    unset($ar);
+    unlink($archive_path);
+
+    header('Content-Type: application/gzip');
+    header("Content-Length: " . filesize($archive_path . ".gz"));
+    $fp = fopen($archive_path . ".gz", 'rb');
+
+    fpassthru($fp);
+    fclose($fp);
+
+    // Delete compressed tar
+    unlink($archive_path . ".gz");
+
+    exit;
+}
+
+function file_restore($path) {
+
+    $data = $_POST['data'];
+
+    // Write archive to disk
+    $archive_path = uniqid('sitetool-file-backup-upload-') . '.tar.gz';
+    file_put_contents($archive_path, $data);
+
+    // Extract all files
+    //try { } catch (Exception $e) { }
+    $phar = new PharData($archive_path);
+    $phar->decompress();
+    $phar->extractTo($path);
+
+    //unlink($archive_path);
+
+}
+
 $result = route_command($command);
 echo json_encode($result); //, JSON_PRETTY_PRINT);
 
 /*
+Store articles through Joomla API:
+
+https://forum.joomla.org/viewtopic.php?t=954108
+https://docs.joomla.org/Creating_content_using_JTableContent
+
+---
+
 
 $servername = "joomladb";
 $username = "root";

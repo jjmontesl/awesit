@@ -10,6 +10,7 @@ from sitetool.backup.backup import BackupCommand, BackupListCommand, BackupDelet
 from sitetool.backup.deploy import BackupDeployCommand
 from sitetool.browser import BrowserCommand
 from sitetool.sites import SiteManager, SitesListCommand
+from sitetool.files.files import FilesDiffCommand
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,14 @@ class SiteTool():
                 'backup': BackupCommand,
                 'backup-list': BackupListCommand,
                 'backup-delete': BackupDeleteCommand,
-                'backup-deploy': BackupDeployCommand,
+                #'backup-deploy': BackupDeployCommand,
 
                 'deploy': BackupDeployCommand,  # in the future there may be other deploy types (not from backup)
+
+                #'files': FilesListCommand, (?) (list incremental since date, list all)
+                #'files-diff': FilesDiffCommand,
+
+                'diff': FilesDiffCommand,
 
                 #'joomla-list': JoomlaListCommand, ? (w/ extensions, status, etc...)
                 #'joomla-upgrade': JoomlaExtensionsUpgradeCommand,
