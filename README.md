@@ -17,17 +17,48 @@ Features:
 (See the Examples section below for more information)
 
 
-# Requirements
+## Usage
 
-- "Replace" panel (list webs, backups, pending updates, security extensions...)
-- Backup Joomla (backups are slow ie 10 min)
-- Update some content (1-N articles or modules, w/ images)
-- Update an extension or extensions manually
+    usage: sit [-h] [-d] [-c CONFIG] command [command options]
 
-Lean Canvas Tasks:
+      Commands:
+        backup               Backup a given site
+        backup-delete        Delete backup jobs data (use with caution!)
+        backup-list          Show available backup jobs
+        browser              Opens a browser tab pointing to a site
+        db-diff              Compare data in two databases with same schema.
+        db-serialize         Dump database tables into serialized format usable to calculate differences.
+        deploy               Deploys a backup to a given environment
+        files-diff           Show differences between two sites file trees
+        joomla-info          Show information about Joomla installations
+        sites                Show configured sites and environments
 
-- Update outdated extensions automatically (joomla "button")
-- Update Joomla (through joomla "button")
+      Use  sit <command> -h  for help about that command.
+
+    positional arguments:
+      command               command to run
+
+    optional arguments:
+      -d, --debug           debug logging
+      -c CONFIG, --config CONFIG
+                            config file
+
+
+## Installation
+
+Requires Python 3.6 or above.
+
+Clone the source repository:
+
+    git clone https://...
+
+Enter the directory and install:
+
+    python3.6 setup.py install
+
+
+In order to use SiteTool, **you must define a configuration file** that
+describes your different site projects and deployment environments.
 
 
 ## Configuration
@@ -38,45 +69,19 @@ Configuration is done in YAML format. Configuration may eventually
 include templates and other files. It is recommended to keep
 your sitetool configuration versioned.
 
-SiteTool reads by default configuration from user home `~/.sitetool.conf . This
-can be changed using the `-c` command line option.
+SiteTool reads by default configuration from user home `~/.sitetool.conf`.
+This can be changed using the `-c` command line option.
 
 You can find an example configuration in the `sitetool.conf.sample` file.
-Copy it to your home `~/.sitetool.conf` and **modify it** to reflect the
-sites you will be managing.
-
-
-## Usage
-
-    usage: sitetool [-h] [-d] [-c CONFIG] command [command options]
-
-      Commands:
-        backup-list
-        backup
-        deploy
-        backup-delete
-        sites
-        browser
-        backup-deploy
-
-    positional arguments:
-      command               subcommand to run
-
-    optional arguments:
-      -d, --debug           debug logging
-      -c CONFIG, --config CONFIG
-                            config file
-
-
-## Installation
-
-In order to use SiteTool, you must define a configuration file that describes
-your projects and deployment environments.
+Copy it to your home directory with name `.sitetool.conf` and
+**modify it** to reflect the sites you will be managing.
 
 
 ## Examples
 
-    $ # List your configured sites, computing their size
+**Site Management**
+
+    $ # List configured sites, computing their size
     $ sitetool sites -f
 
     backup:main      [ 4865.9M /    17 files] (an hour ago) ~/sitetool/backup/
@@ -90,6 +95,7 @@ your projects and deployment environments.
     ...
     Listed sites: 14
 
+**Backups**
 
     $ # Backup a site (to the default storage: `backup:main`)
     $ sitetool backup site1:prod
@@ -117,8 +123,19 @@ your projects and deployment environments.
     # Deploy a site last backup to development environment
     sitetool deploy ::site1:prod:-1 site1:dev
 
+**Browser**
+
     # Open a browser tab for a site
     sitetool browser testsite1:prod
+
+**Joomla sites management**
+
+    # List Joomla sites, their versions and extensions
+    sit joomla-info
+
+    # Dump detailed Joomla information in JSON format (and pipe output through less)
+    sit joomla-info mysite:prod --json | less
+
 
 
     sitetool joomla-data-merge testsite1:dev :prod --models:articles,products --overwrite --noop
@@ -134,16 +151,40 @@ your projects and deployment environments.
 
 ## TODO:
 
-- Add complete file ignore support to local and ssh files (currently local uses ignores just for listing)
-- Use proper temporary names for files during backup/deploy/upload/download! (could be conflicts with current implementation)
-- Connect only once to each backup storage when exploring backups! (avoids hitting SSH connections)
+- Common settings, overrideable by sites and resources (global, per-site and per-env files.exclude).
+- Add complete file ignore support to local and ssh files (currently LocalFiles uses ignores just for listing, not backup/restore)
+
+- Refactor backup to support different resources providing different files.
+- Join backup jobs (use common index for files). Extract dates from filenames (not modification date), make dates UTC.
+- Implement better backup selectors (index, index-range, dates, tags, filename, resource type)
 
 - Deploy files supporting diff and different merge strategies (ovewrite all, only newer, etc...).
+- Support backup tagging (and special "keep" tag for undeletion) (workaround: for now use a different store)
 
-- (?) https://github.com/2createStudio/shuttle-export
-- (?) How to deal with versioning? git before changes to be able to check diffs and and commits... (?) (files only, in principle?)
+- Fix database diff column ordering issue (or improve it and advance towards database data merge).
+  (convert serialized tables to {"rows": [], "columns": [], "pk": ...}
 
-- (?) Backup scheduling
+- Fix: connect only once to each backup storage when exploring backups! (avoids hitting SSH connections)
+- Fix file dates comparison issue (local / UTC differences).
+- Fix: use proper temporary names for files during backup/deploy/upload/download! (could be conflicts with current implementation)
+
+- Backup scheduling (anacron style (?)
+
+- Normalize local and SSH command execution (?) (confusing in SQLite and MySQL/SSHMySQL ?)
+
+- (?) Joomla database export: https://github.com/2createStudio/shuttle-export
+
+- (?) Git: git before changes to be able to check diffs and and commits... (?) (files only)
 - (?) Monitoring: response times, check health (ie via PHP tool or custom regexps on URLs)
 - (?) Containers, Virtualization, Other tools... (Docker / Lando)
+
+**Requirements:**
+
+- "Replace" panel (list webs, backups, pending updates, security extensions...)
+- Backup and restore Joomla
+
+- Update some content (1-N articles or modules, w/ images)
+- Update an extension or extensions manually
+- Update outdated extensions automatically (joomla "button")
+- Update Joomla (through joomla "button")
 

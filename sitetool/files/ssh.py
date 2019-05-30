@@ -140,6 +140,7 @@ class SSHFiles():
         backup_md5sum = None
 
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
+            # --files-from files.txt
             if self.sudo:
                 c.sudo("tar czf %s -C %s ." % (remote_backup_path, self.path))
             else:

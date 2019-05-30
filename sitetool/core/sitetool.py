@@ -10,8 +10,9 @@ from sitetool.backup.backup import BackupCommand, BackupListCommand, BackupDelet
 from sitetool.backup.deploy import BackupDeployCommand
 from sitetool.browser import BrowserCommand
 from sitetool.sites import SiteManager, SitesListCommand
-from sitetool.files.files import FilesDiffCommand
+from sitetool.files.files import FilesListCommand, FilesDiffCommand
 from sitetool.db.db import DatabaseSerializeCommand, DatabaseDiffCommand
+from sitetool.joomla.joomla import JoomlaInfoCommand
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +32,24 @@ class SiteTool():
                 'backup-list': BackupListCommand,
                 'backup-delete': BackupDeleteCommand,
                 #'backup-deploy': BackupDeployCommand,
+                'deploy': BackupDeployCommand,
 
-                'deploy': BackupDeployCommand,  # in the future there may be other deploy types (not from backup)
-
-                #'files': FilesListCommand, (?) (list incremental since date, list all)
+                'files': FilesListCommand,
                 'files-diff': FilesDiffCommand,
+                #'files-sync': FilesSyncCommand,
 
                 'db-serialize': DatabaseSerializeCommand,
                 'db-diff': DatabaseDiffCommand,
+                #'db-sync': DatabaseSyncCommand,
 
-                'diff': FilesDiffCommand,
+                #'data-export': DataExportCommand,
+                #'data-sync': DataImportCommand,
 
-                #'joomla-list': JoomlaListCommand, ? (w/ extensions, status, etc...)
+                #'diff': CommonDiffCommand,
+                #'sync': CommonSyncCommand,
+
+
+                'joomla-info': JoomlaInfoCommand,  # ? (w/ extensions, status, etc...)
                 #'joomla-upgrade': JoomlaExtensionsUpgradeCommand,
                 #'joomla-checks-': (? install folder, etc?)
                 #'joomla-ext-list': JoomlaExtensionsListCommand,

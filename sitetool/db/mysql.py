@@ -6,7 +6,9 @@ import sys
 import tempfile
 
 import fabric
-
+from sitetool.db.db import SSHShellAdaptor
+import csv
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -59,23 +61,86 @@ class MySQLDatabase():
 
 
 
-class SSHMySQLDatabase():
+class SSHMySQLDatabase(SSHShellAdaptor):
     """
     """
-
-    ssh_host = None
-    ssh_user = None
-    ssh_port = None
-
-    sudo = False
 
     db_host = '127.0.0.1'
     db_user = None
     db_password = None
     db_name = None
 
-    def _ssh_get_user(self):
-        return self.ssh_user
+    def get_name(self):
+        """
+        Returns a URL-like label for this database.
+        """
+        return "%s:%s" % (self.get_ssh_userhost_string(), self.db_name)
+
+    def list_tables(self):
+        logger.debug("Listing SQLite tables from: %s", self.get_name())
+
+        with self.ssh_context() as c:
+            #sql = "select * from schema.table;"
+            sql = "show tables;"
+            command = 'mysql --batch -h %s -u %s -p%s %s -e "%s"' % (self.db_host, self.db_user, self.db_password, self.db_name, sql)
+            output = None
+            try:
+                if self.sudo:
+                    output = c.sudo(command, hide=True)
+                else:
+                    output = c.run(command, hide=True)
+                output = output.stdout.strip()
+            except Exception as e:
+                # Assume the directory does not exist, but this is bad error handling
+                logger.warn("Error while listing MySQL database tables: %s" % e)
+                output = ''
+
+        tables = output.split("\n")
+
+        if len(tables) > 0:
+            tables = tables[1:]
+
+        return tables
+
+    def serialize(self):
+        logger.debug("Serializing MySQL data: %s", self.get_name())
+        tables = self.list_tables()
+
+        items = {}
+
+        with self.ssh_context() as c:
+
+            for table in tables:
+                sql = "select * from %s;" % table
+                command = 'mysql --batch -h %s -u %s -p%s %s -e "%s"' % (self.db_host, self.db_user, self.db_password, self.db_name, sql)
+
+                output = None
+                try:
+                    if self.sudo:
+                        output = c.sudo(command, hide=True)
+                    else:
+                        output = c.run(command, hide=True)
+                    output = output.stdout.strip()
+                except Exception as e:
+                    # Assume the directory does not exist, but this is bad error handling
+                    logger.warn("Error while serializing SQLite database: %s" % e)
+                    output = ''
+
+                items[table] = self._process_table_data(output)
+
+        return items
+
+    def _process_table_data(self, output):
+
+        items = []
+
+        fileio = io.StringIO(output)
+        #reader = csv.DictReader(fileio, delimiter=',', quotechar='"')
+        reader = csv.reader(fileio, delimiter='\t', quotechar=None)
+        for row in reader:
+            items.append(row)
+
+        return items
 
     def dump(self):
         """
@@ -85,7 +150,7 @@ class SSHMySQLDatabase():
         backup_path = tempfile.mktemp(prefix='sitetool-tmp-db-backup-')
         logger.info("Archiving database (via SSH remote MySQL client) to %s", backup_path)
 
-        with fabric.Connection(host=self.ssh_host, port=self.ssh_port, user=self._ssh_get_user()) as c:
+        with fabric.Connection(host=self.ssh_host, port=self.ssh_port, user=self.get_ssh_user()) as c:
             output = None
             try:
                 if self.sudo:
@@ -111,8 +176,20 @@ class SSHMySQLDatabase():
 
         return (backup_path, backup_md5sum)
 
-    def restore(self, path):
+    def restore(self, local_path):
         """
         Restores a backup file.
         """
-        raise NotImplementedError()
+        logger.info("Restoring database from %s to %s", local_path, self.get_name())
+
+        remote_path = tempfile.mktemp(prefix='sitetool-tmp-')
+
+        with self.ssh_context() as c:
+            result = c.put(local_path, remote_path)
+            logger.info("Uncompressing database.")
+            self.ssh_run(c, 'mv "%s" "%s.sql.gz"' % (remote_path, remote_path))
+            self.ssh_run(c, 'gunzip "%s.sql.gz"' % (remote_path))
+            logger.info("Loading database.")
+            self.ssh_run(c, 'mysql -h "%s" -u "%s" -p%s %s < "%s.sql"' % (self.db_host, self.db_user, self.db_password, self.db_name, remote_path))
+            self.ssh_run(c, 'rm "%s.sql"' % (remote_path))
+

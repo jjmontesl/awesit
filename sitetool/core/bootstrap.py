@@ -47,15 +47,20 @@ class Bootstrap():
 
     def parse_args(self, st):
 
-        usage = 'sitetool [-h] [-d] [-c CONFIG] command [command options]\n\n'
+        program_name = os.path.basename(sys.argv[0])
+
+        shortusage = '%s [-h] [-d] [-c CONFIG] command [command options]\n' % program_name
+        usage = shortusage + "\n"
         usage = usage + "  Commands:\n"
         for command_name, command in sorted(st.commands.items()):
             usage = usage + "    %-20s %s\n" % (command_name, getattr(command, 'COMMAND_DESCRIPTION', ''))
+        usage = usage + "\n"
+        usage = usage + "Use '%s <command> -h' for help about that command.\n" % program_name
 
         parser = argparse.ArgumentParser(usage=usage, add_help=False)  # description='', usage = ''
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
         parser.add_argument("-c", "--config", default="~/.sitetool.conf", help="config file")
-        parser.add_argument("command", nargs='?', default=None, help="subcommand to run")
+        parser.add_argument("command", nargs='?', default=None, help="command to run")
         #parser.add_argument("rest", nargs='*')
 
         args, unknown = parser.parse_known_args()  # sys.argv[1:]
@@ -65,8 +70,10 @@ class Bootstrap():
 
         if args.command not in st.commands:
             if args.command:
-                print('Unrecognized command: %r' % args.command)
-            parser.print_help()
+                print('Unrecognized command: %s' % args.command)
+                print(shortusage)
+            else:
+                parser.print_help()
             sys.exit(1)
 
         command_class = st.commands[args.command]

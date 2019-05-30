@@ -132,27 +132,7 @@ class SitesListCommand():
                                    size_data['size'] / (1024 * 1024) if size_data else 0,
                                    size_data['count'] if size_data else 0,
                                    timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-'))
-                label = site['files'].path
-
-            '''
-                print("%-20s [%7.1fM / %5s files (%s)]%s %s" %
-                      (("%s:%s" % (site['site']['name'], site['name'])),
-                       size_data['size'] / (1024 * 1024) if size_data else 0,
-                       size_data['count'] if size_data else 0,
-                       timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-',
-                       backups_info_text,
-                       site['files'].path))
-            # TODO: Allow options together
-            elif self.backups:
-                files_info = '' if not self.files else
-                print("%-20s [%6.1fM / %3s backups] (%s) %s" %
-                      (("%s:%s" % (site['site']['name'], site['name'])),
-                       backup.size / (1024 * 1024) if backup else 0,
-                       backup.count if backup else 0,
-                       timeago(backup.dt_create) if backup else '-',
-                       site['url'] if 'url' in site else '-'))
-            '''
-
+                label = site['files'].path if 'files' in site else label
 
             print("%-20s %s%s %s" % (("%s:%s" % (site['site']['name'], site['name'])),
                                      files_info_text,
@@ -161,7 +141,7 @@ class SitesListCommand():
 
             if self.info:
                 if 'db' in site:
-                    print("  - db:    %s (%s)" % (site['db'].db, site['db'].__class__.__name__))
+                    print("  - db:    %s (%s)" % (getattr(site, 'db', ""), site['db'].__class__.__name__))
                 print("  - files: %s (%s)" % (site['files'].path, site['files'].__class__.__name__))
                 if 'git' in site:
                     print("  - git:   branch '%s'" % (site['git'].branch))

@@ -325,32 +325,42 @@ class BackupManager():
         files.reverse()
         idx = 0
         for f in files:
-            idx -= 1
+            idx += 1
             jobs.append(BackupJob(env, env_o, f.relpath, f.mtime, f.size, idx, 1))
 
         jobs.sort(key=lambda x: x.dt_create)
         for job in jobs:
             job
 
-        if job_expr.startswith('-') and jobs:
-            if '-' in job_expr[1:]:
+        if job_expr and jobs and job_expr != '*':
+            if '-' in job_expr:
                 # Range
-                idx_a = job_expr[1:].split("-")[0]
-                idx_b = job_expr[1:].split("-")[1]
+                range_a = job_expr.split("-")[0]
+                range_b = job_expr.split("-")[1]
+
+                idx_a = int(range_a) if range_a else None
+                idx_b = int(range_b) if range_b else None
 
                 if idx_a and idx_b:
-                    if int(idx_b) > int(idx_a):
+                    if int(idx_b) < int(idx_a):
                         (idx_a, idx_b) = (idx_b, idx_a)
-                    jobs = jobs[-int(idx_a) : -int(idx_b) + 1]
+
+                    # Ranges ending in 0 ([-3:0]) are invalid
+                    if -int(idx_a) + 1 == 0:
+                        jobs = jobs[-int(idx_b) :]
+                    else:
+                        jobs = jobs[-int(idx_b) : -int(idx_a) + 1]
+
                 elif idx_a:
-                    jobs = jobs[-int(idx_a):]
+                    jobs = jobs[:-int(idx_a) + 1]
                 else:
-                    jobs = jobs[:-int(idx_b) + 1]
+                    jobs = jobs[-int(idx_b):]
             else:
                 # Single index
                 idx = int(job_expr)
-                if (-idx <= len(jobs)):
-                    jobs = [jobs[idx]]
+
+                if (idx <= len(jobs)):
+                    jobs = [jobs[-idx]]
                 else:
                     jobs = []
 

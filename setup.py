@@ -3,11 +3,11 @@ import sitetool
 
 setup(
 
-    name = 'sitetool',
-    #package = 'sitetool',
+    name = 'sittool',
+    package = 'sitetool',
     version = sitetool.APP_VERSION,
 
-    author = 'Jose Juan Montes',
+    author = 'Jose Juan Montes, Pablo Arias',
     author_email = 'jjmontes@gmail.com',
 
     packages = find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
@@ -39,9 +39,9 @@ setup(
         "dateutils >= 0.6.6",
         "fabric >= 2.4.0",
         "humanize >= 0.5.1",
-        "requests >= 2.22.0"
+        "requests_html >= 0.10.0"
     ],
 
-    entry_points={'console_scripts': ['sitetool=sitetool.core.bootstrap:main']},
+    entry_points={'console_scripts': ['sit=sitetool.core.bootstrap:main']},
 )
 

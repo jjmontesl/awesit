@@ -10,48 +10,21 @@ import invoke
 import csv
 import io
 
+from sitetool.db.db import SSHShellAdaptor
 
 logger = logging.getLogger(__name__)
-
-
-class SSHShellAdaptor(object):
-    """
-    """
-
-    ssh_host = None
-    ssh_user = None
-    ssh_port = None
-    sudo = False
-
-    def get_ssh_user(self):
-        return self.ssh_user
-
-    def get_ssh_userhost_string(self):
-        ssh_user = self.get_ssh_user()
-        if ssh_user:
-            return "%s@%s" % (ssh_user, self.ssh_host)
-        elif self.ssh_host:
-            return "%s" % self.ssh_host
-        return ''
-
-    def ssh_context(self):
-        if self.ssh_host:
-            return fabric.Connection(host=self.ssh_host, port=self.ssh_port, user=self.get_ssh_user())
-        else:
-            # FIXME: Normalize local / SSH connections for different adaptors, this is doing an unneeded/invalid SSH connection
-            return fabric.Connection(host="localhost")
 
 
 class SQLiteDatabase(SSHShellAdaptor):
     """
     """
-    db_path = None
+    db_name = None
 
     def get_name(self):
         """
         Returns a URL-like label for this database.
         """
-        return "%s/%s" % (self.get_ssh_userhost_string(), self.db_path.lstrip('/'))
+        return "%s:%s" % (self.get_ssh_userhost_string(), self.db_name.lstrip('/'))
 
     def list_tables(self):
         logger.debug("Listing SQLite tables from: %s", self.get_name())
@@ -68,7 +41,7 @@ class SQLiteDatabase(SSHShellAdaptor):
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
-                logger.warn("Error while listint SQLite database tables: %s" % e)
+                logger.warn("Error while listing SQLite database tables: %s" % e)
                 output = ''
 
         tables = output.split("\n")
