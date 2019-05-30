@@ -79,7 +79,8 @@ class SitesListCommand():
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
         parser.add_argument("-i", "--info", action="store_true", default=False, help="show site configuration info")
         parser.add_argument("-f", "--files", action="store_true", default=False, help="calculate site files size")
-        parser.add_argument("-b", "--backups", action="store", type=str, nargs='?', const="*:main", default=None, help="show backups information (optionally use a filter *:*)")
+        parser.add_argument("-b", "--backups", action="store_true", default=False, help="calculate site files size")
+        parser.add_argument("--backup-sites", action="store", type=str, default="*:main", help="show backups information (optionally use a filter *:*)")
 
         args = parser.parse_args(args)
 
@@ -88,8 +89,7 @@ class SitesListCommand():
         self.backups = args.backups
         self.info = args.info
 
-        if self.backups == '':
-            self.backups = False
+        self.backup_sites = args.backup_sites
 
     def run(self):
         """
@@ -103,7 +103,7 @@ class SitesListCommand():
         backups = {}
         if self.backups:
             backupmanager = self.st.backupmanager
-            jobs = backupmanager.list_backups(self.backups + ':' + self.src + ':*')
+            jobs = backupmanager.list_backups(self.backup_sites + ':' + self.src + ':*')
             jobs = backupmanager.group_backups(jobs)
             for job in jobs:
                 key = (job.env_site['site']['name'], job.env_site['name'])
@@ -115,25 +115,49 @@ class SitesListCommand():
             key = (site['site']['name'], site['name'])
             backup = backups.get(key, None)
 
+            label = site['url'] if 'url' in site else '-'
+
+            backups_info_text = ''
+            files_info_text = ''
+
+            if self.backups:
+                backups_info_text = ('[%6.1fM / %3s backups - %15s] ' % (
+                                     backup.size / (1024 * 1024) if backup else 0,
+                                     backup.count if backup else 0,
+                                     timeago(backup.dt_create) if backup else '-'))
+
             if self.files:
                 size_data = self.st.sites.calculate_site_size(site)
-                print("%-20s [%7.1fM / %5s files] (%s) %s" %
+                files_info_text = ('[%7.1fM / %5s files - %15s] ' % (
+                                   size_data['size'] / (1024 * 1024) if size_data else 0,
+                                   size_data['count'] if size_data else 0,
+                                   timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-'))
+                label = site['files'].path
+
+            '''
+                print("%-20s [%7.1fM / %5s files (%s)]%s %s" %
                       (("%s:%s" % (site['site']['name'], site['name'])),
                        size_data['size'] / (1024 * 1024) if size_data else 0,
                        size_data['count'] if size_data else 0,
                        timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-',
+                       backups_info_text,
                        site['files'].path))
             # TODO: Allow options together
             elif self.backups:
+                files_info = '' if not self.files else
                 print("%-20s [%6.1fM / %3s backups] (%s) %s" %
                       (("%s:%s" % (site['site']['name'], site['name'])),
                        backup.size / (1024 * 1024) if backup else 0,
                        backup.count if backup else 0,
                        timeago(backup.dt_create) if backup else '-',
                        site['url'] if 'url' in site else '-'))
-            else:
-                print("%-20s %s" % (("%s:%s" % (site['site']['name'], site['name'])),
-                                    site['url'] if 'url' in site else '-'))
+            '''
+
+
+            print("%-20s %s%s %s" % (("%s:%s" % (site['site']['name'], site['name'])),
+                                     files_info_text,
+                                     backups_info_text,
+                                     label))
 
             if self.info:
                 if 'db' in site:

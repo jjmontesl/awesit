@@ -23,6 +23,8 @@ class PHPFiles():
     path = None
     exclude = None
 
+    ignore_list_errors = False
+
     def file_list(self, remote_path, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
@@ -40,7 +42,10 @@ class PHPFiles():
             r = requests.post(url, data)
             fileinfo = json.loads(r.text)
         except Exception as e:
-            logger.warn("Could not retrieve filelist information from PHP connector (%s): %s", url, e)
+            if not self.ignore_list_errors:
+                logger.warn("Could not retrieve filelist information from PHP connector (%s): %s", url, e)
+            else:
+                logger.debug("Could not retrieve filelist information from PHP connector (%s): %s", url, e)
             return None
 
         result = []

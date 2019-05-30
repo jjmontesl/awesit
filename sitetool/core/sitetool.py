@@ -11,6 +11,7 @@ from sitetool.backup.deploy import BackupDeployCommand
 from sitetool.browser import BrowserCommand
 from sitetool.sites import SiteManager, SitesListCommand
 from sitetool.files.files import FilesDiffCommand
+from sitetool.db.db import DatabaseSerializeCommand, DatabaseDiffCommand
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,10 @@ class SiteTool():
                 'deploy': BackupDeployCommand,  # in the future there may be other deploy types (not from backup)
 
                 #'files': FilesListCommand, (?) (list incremental since date, list all)
-                #'files-diff': FilesDiffCommand,
+                'files-diff': FilesDiffCommand,
+
+                'db-serialize': DatabaseSerializeCommand,
+                'db-diff': DatabaseDiffCommand,
 
                 'diff': FilesDiffCommand,
 

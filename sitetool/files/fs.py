@@ -24,6 +24,8 @@ class FSFiles():
     exclude = None
     path = None
 
+    ignore_list_errors = False
+
     def file_list(self, remote_path, depth=None):
 
         self.path = self.url
@@ -36,7 +38,10 @@ class FSFiles():
         try:
             remote_fs = fs.open_fs(url)
         except Exception as e:
-            logger.warn("Could not open filesystem: %s", url)
+            if not self.ignore_list_errors:
+                logger.warn("Could not open filesystem: %s", url)
+            else:
+                logger.debug("Could not open filesystem: %s", url)
             return None
 
         result = []
