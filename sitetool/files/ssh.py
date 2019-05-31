@@ -136,15 +136,34 @@ class SSHFiles(Files):
 
         backup_md5sum = None
 
+        logger.info("Resolving files to be archived.")
+        filelist = self.file_list('')
+        size = sum([f.size for f in filelist]) if filelist else 0
+
+         # Write filelist to file
+        filelist_path = tempfile.mktemp(prefix='sitetool-tmp-files-backup-filelist-')
+        remote_filelist_path = tempfile.mktemp(prefix='sitetool-tmp-files-backup-filelist-remote-')
+        with open(filelist_path, "w") as f:
+            f.write("\n".join([x.relpath for x in filelist]))
+
         with fabric.Connection(host=self.host, port=self.port, user=self.get_user()) as c:
-            # --files-from files.txt
+
+            # Upload filelist
+            logger.info("Uploading filelist.")
+            c.put(filelist_path, remote_filelist_path)
+
+            logger.info("Archiving %d files (%.1fM) via SSH.", len(filelist), size / (1024 * 1024))
             if self.sudo:
-                c.sudo("tar czf %s -C %s ." % (remote_backup_path, self.path))
+                c.sudo('tar czf "%s" -C "%s" --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
+                c.sudo('rm "%s"' % (remote_filelist_path))
             else:
-                c.run("tar czf %s -C %s ." % (remote_backup_path, self.path))
+                c.run('tar czf "%s" -C "%s" --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
+                c.run('rm "%s"' % (remote_filelist_path))
 
         backup_path = self.file_get(remote_backup_path, base_path="/")
         self.file_delete(remote_backup_path, base_path="/")
+
+        os.unlink(filelist_path)
 
         return (backup_path, backup_md5sum)
 

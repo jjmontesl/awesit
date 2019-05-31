@@ -157,15 +157,16 @@ Copy it to your home directory with name `.sitetool.conf` and
 
 ## TODO:
 
-- Common settings, overrideable by sites and resources (global, per-site and per-env files.exclude).
-- Add complete file ignore support to local and ssh files (currently LocalFiles uses ignores just for listing, not backup/restore)
-
-- Refactor backup to support different resources providing different files.
-- Join backup jobs (use common index for files). Extract dates from filenames (not modification date), make dates UTC.
-- Implement better backup selectors (index, index-range, dates, tags, filename, resource type)
+- Add complete file ignore support to local, SSH and PHP files (currently LocalFiles uses ignores just for listing, not backup/restore)
 
 - Deploy files supporting diff and different merge strategies (ovewrite all, only newer, etc...).
+
 - Support backup tagging (and special "keep" tag for undeletion) (workaround: for now use a different store)
+- Implement better backup selectors (index, index-range, dates, tags, filename, resource type)
+- Extract dates from filenames (not modification date), make dates UTC.
+
+- Reconsider: individual/join jobs? / multiple resources / full/incremental:
+  Refactor backup to support different resources providing different files? or workaround using extra sites/env?
 
 - Fix database diff column ordering issue (or improve it and advance towards database data merge).
   (convert serialized tables to {"rows": [], "columns": [], "pk": ...}
