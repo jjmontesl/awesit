@@ -9,13 +9,13 @@ import logging
 import tempfile
 import pytz
 
-from sitetool.files.files import SiteFile
+from sitetool.files.files import SiteFile, Files
 
 
 logger = logging.getLogger(__name__)
 
 
-class PHPFiles():
+class PHPFiles(Files):
     '''
     '''
 
@@ -25,7 +25,7 @@ class PHPFiles():
 
     ignore_list_errors = False
 
-    def file_list(self, remote_path, depth=None):
+    def file_list(self, remote_path, all=False, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
 
@@ -52,22 +52,17 @@ class PHPFiles():
         for file in fileinfo:
 
             file_path_abs = file[3]
-            file_path_rel = "/" + file_path_abs[len(final_path):]
-
-            matches = False
-            if self.exclude:
-                for exclude in self.exclude:
-                    if file_path_rel.startswith(exclude):
-                        matches = True
-                        break
-            if matches:
-                continue
+            file_path_rel = file_path_abs[len(final_path):]
 
             #ctime = datetime.datetime.fromtimestamp(file[0]).replace(tzinfo=pytz.utc)
-            ctime = datetime.datetime.strptime(file[0], '%Y-%m-%d+%H:%M:%S').replace(tzinfo=pytz.utc)
+            #ctime = datetime.datetime.strptime(file[0], '%Y-%m-%d+%H:%M:%S').replace(tzinfo=pytz.utc)
             mtime = datetime.datetime.strptime(file[1], '%Y-%m-%d+%H:%M:%S').replace(tzinfo=pytz.utc)
 
             result.append(SiteFile(file_path_rel, file[2], mtime))
+
+        # Excludes
+        if not all:
+            result = self.files_filtered(result)
 
         return result
 

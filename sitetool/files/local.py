@@ -66,7 +66,7 @@ class LocalFiles(Files):
                     stats = os.stat(file_path_abs)
 
                     local_zone = tz.tzlocal()
-                    ctime_local = datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]).replace(tzinfo=local_zone)
+                    #ctime_local = datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]).replace(tzinfo=local_zone)
                     mtime_local = datetime.datetime.fromtimestamp(stats[stat.ST_MTIME]).replace(tzinfo=local_zone)
 
                     result.append(SiteFile(file_path_rel, stats[stat.ST_SIZE], mtime_local))
