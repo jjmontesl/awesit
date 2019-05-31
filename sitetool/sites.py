@@ -89,7 +89,7 @@ class SiteEnv(SiteToolComponent):
                 raise
 
     def comp(self, name):
-        return self.config[name]
+        return self.config.get(name, None)
 
     def setting(self, setting, type):
         """

@@ -64,6 +64,12 @@ class FSFiles():
             if matches:
                 continue
 
+            #try:
+            #    info = remote_fs.getinfo(path, namespaces=['details'])
+            #except Exception as e:
+            #    logger.warn("Could not obtain information of file: %s", path)
+            #    continue
+
             mtime_utc = info.modified.astimezone(pytz.utc)
 
             #local_zone = tz.tzlocal()

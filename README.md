@@ -1,9 +1,11 @@
 # Sitetool
 
-Sitetool is a tool to manage website deployments and development.
+Sitetool is a tool to manage website deploy, backup and update workflows.
 
-It manages information about site deployments and provides
-methods to backup and deploy sites across different environments.
+Sitetool can help developers, content workers, webmasters and users to
+backup deployed sites and replicate them to different environments.
+It can also calculate file and database differences between environments.
+It can also serve as a backup system and scheduler.
 
 Features:
 
@@ -132,6 +134,19 @@ Copy it to your home directory with name `.sitetool.conf` and
 
     # List Joomla sites, with extensions list and verbose info
     sit joomla-info -v -e
+
+    testsite2:prod
+      Joomla! 3.9.6 Stable [ Amani ] 7-May-2019 15:00 GMT (178 extensions) - PHP 7.1.29
+      178 extensions (component: 34, library: 5, module: 39, plugin: 93, template: 4, language: 1, file: 1, package: 1)
+      44 directories (0 non writable)
+      http://localhost:8080
+      Extensions (178):
+        com_actionlogs                        3.9.0 D  component
+        com_admin                             3.0.0    component
+        com_ajax                              3.2.0    component
+        com_associations                      3.7.0 D  component
+        com_banners                           3.0.0    component
+        ...
 
     # Dump detailed Joomla information in JSON format (and pipe output through less)
     sit joomla-info mysite:prod --json | less

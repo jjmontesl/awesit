@@ -69,6 +69,13 @@ class Files(SiteComponent):
         excludes = self.setting('files.exclude', "array-extend", self.exclude)
         return self.files_matches(relpaths, excludes)
 
+    def filenames_filtered(self, filenames):
+        # Do not use: added for files-diff, but they should work with SiteFiles always
+        excluded = self.files_excluded(filenames)
+        excluded_set = set(excluded)
+        result = [f for f in filenames if f not in excluded_set]
+        return result
+
     def files_filtered(self, sitefiles):
         excluded = self.files_excluded([f.relpath for f in sitefiles])
         excluded_set = set(excluded)
@@ -92,7 +99,8 @@ class FilesListCommand():
         parser.add_argument("-s", "--by-size", action="store_true", default=False, help="sort by size")
         parser.add_argument("-t", "--by-time", action="store_true", default=False, help="sort by time")
         parser.add_argument("-r", "--reverse", action="store_true", default=False, help="reverse ordering")
-        parser.add_argument("-a", "--all", action="store_true", default=False, help="show all files (excluded)")
+        parser.add_argument("-a", "--all", action="store_true", default=False, help="list all files")
+        parser.add_argument("-e", "--excluded", action="store_true", default=False, help="list excluded files")
 
         args = parser.parse_args(args)
 
@@ -101,6 +109,11 @@ class FilesListCommand():
         self.by_time = args.by_time
         self.reverse = args.reverse
         self.all = args.all
+        self.excluded = args.excluded
+
+        if (self.all and self.excluded):
+            logger.error("Cannot list both --all and --excluded files (the two options cannot be used together).")
+            sys.exit(1)
 
     def run(self):
         """
@@ -108,17 +121,17 @@ class FilesListCommand():
 
         dt_start = datetime.datetime.utcnow()
 
-        # FIXME: This way of comparing (text-based) is incorrect regarding
-        # directory differences
-
         logger.debug("Directory listing: %s", self.site)
 
         (site_name, site_env) = Site.parse_site_env(self.site)
         site = self.ctx.get('sites').site_env(site_name, site_env)
 
-        # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
-
         files = site.comp('files').file_list('', all=self.all)
+        if self.excluded:
+            files_all = site.comp('files').file_list('', all=True)
+            files_set = set([f.relpath for f in files])
+            files = [f for f in files_all if f.relpath not in files_set]
+
         files.sort(key=lambda f: f.relpath)
 
         if self.by_size:
@@ -189,8 +202,6 @@ class FilesDiffCommand():
         site_a = self.ctx.get('sites').site_env(site_a_name, site_a_env)
         site_b = self.ctx.get('sites').site_env(site_b_name, site_b_env)
 
-        # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
-
         files_a = site_a.comp('files').file_list('')
         files_b = site_b.comp('files').file_list('')
 
@@ -212,26 +223,35 @@ class FilesDiffCommand():
 
         # Print files
         files_added = sorted(list(files_a_set - files_b_set))
+        files_added = site_b.comp('files').filenames_filtered(files_added)
         files_removed = sorted(list(files_b_set - files_a_set))
+        files_removed = site_b.comp('files').filenames_filtered(files_removed)
 
         lines = []
+        size = 0
         for f in files_added:
             total_files_added += 1
             lines.append("+%s" % files_a_dict[f][0])
+            size += files_a_dict[f][1].size
         for f in files_removed:
             total_files_deleted += 1
             lines.append("-%s" % files_b_dict[f][0])
 
-        for f in (files_a_set & files_b_set):
+        files_changed = list(files_a_set & files_b_set)
+        files_changed = site_b.comp('files').filenames_filtered(files_changed)
+        for f in files_changed:
             if files_a_dict[f][0] != files_b_dict[f][0]:
+                size += files_a_dict[f][1].size
                 total_files_changed += 1
-                lines.append("-%s" % files_b_dict[f][0])
-                lines.append("+%s" % files_a_dict[f][0])
+                #lines.append("-%s" % files_b_dict[f][0])
+                #lines.append("+%s" % files_a_dict[f][0])
+                direction = '>' if files_a_dict[f][1].mtime >= files_b_dict[f][1].mtime else '<'
+                lines.append("%s%s" % (direction, files_a_dict[f][0]))
 
         sorted_lines = sorted(lines, key=lambda l: l[1:])
         print("\n".join(sorted_lines))
 
-        print(" site A: %d files  site B: %d files" % (len(files_a), len(files_b)))
-        print(" %d file changes, %d file additions, %d file deletions)" % (total_files_changed, total_files_added, total_files_deleted))
+        print(" source: %d files  target: %d files" % (len(files_a), len(files_b)))
+        print(" %d file changes, %d file additions, %d file deletions (%.1fM data)" % (total_files_changed, total_files_added, total_files_deleted, size / (1024*1024)))
 
 

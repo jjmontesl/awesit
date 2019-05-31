@@ -11,7 +11,7 @@ import stat
 import sys
 
 from sitetool.sites import Site
-from sitetool.core.util import timeago
+from sitetool.core.util import timeago, bcolors
 import difflib
 import fabric
 import csv
@@ -122,6 +122,33 @@ class DatabaseDiffCommand():
         self.site_b = args.envb
         self.stat = args.stat
 
+    def string_diff(self, text, n_text):
+        """
+        http://stackoverflow.com/a/788780
+        Unify operations between two compared strings seqm is a difflib.
+        SequenceMatcher instance whose a & b are strings
+        """
+        seqm = difflib.SequenceMatcher(None, text, n_text)
+        output = []
+        for opcode, a0, a1, b0, b1 in seqm.get_opcodes():
+            if opcode == 'equal':
+                output.append(seqm.a[a0:a1])
+                #output.append("..")
+            elif opcode == 'insert':
+                #output.append("<font color=red>^" + seqm.b[b0:b1] + "</font>")
+                #output.append(" +" + seqm.b[b0:b1] + " ")
+                output.append(bcolors.ADDED + seqm.b[b0:b1] + bcolors.ENDC)
+            elif opcode == 'delete':
+                #output.append("<font color=blue>^" + seqm.a[a0:a1] + "</font>")
+                output.append(bcolors.REMOVED + seqm.a[a0:a1] + bcolors.ENDC)
+            elif opcode == 'replace':
+                # seqm.a[a0:a1] -> seqm.b[b0:b1]
+                #output.append("<font color=green>^" + seqm.b[b0:b1] + "</font>")
+                output.append(bcolors.CHANGED + seqm.b[b0:b1] + bcolors.ENDC)
+            else:
+                logger.warn("Unexpected SequenceMatcher opcode.")
+        return ''.join(output)
+
     def run(self):
         """
         """
@@ -138,6 +165,10 @@ class DatabaseDiffCommand():
 
         db_a = site_a.comp('db')
         db_b = site_b.comp('db')
+
+        if not db_a or not db_b:
+            logger.error("Both sites need to have a configured database to calculate data differences.")
+            sys.exit(1)
 
         logger.debug("Serializing databases")
 
@@ -169,11 +200,25 @@ class DatabaseDiffCommand():
 
                 print(" %s (%+d, added: %d, removed: %d)" % (table, len(rows_added) - len(rows_removed), len(rows_added), len(rows_removed)))
                 if not self.stat:
+
                     lines = []
+
+                    # FIXME: Use primary key from infhormation schema!
+                    lines_key = defaultdict(dict)
+
                     for row in rows_added:
-                        lines.append("+ %s" % (",".join(row)))
+                        lines_key[row[0]]['added'] = row
+                        lines.append(bcolors.ADDED + "+" + bcolors.ENDC + " %s" % (",".join(row)))
                     for row in rows_removed:
-                        lines.append("- %s" % (",".join(row)))
+                        lines_key[row[0]]['removed'] = row
+                        lines.append(bcolors.REMOVED + "-" + bcolors.ENDC + " %s" % (",".join(row)))
+
+                    for k, l in lines_key.items():
+                        if 'added' not in l or 'removed' not in l: continue
+                        matchedline = self.string_diff(",".join(l['added']), ",".join(l['removed']))
+                        # FIXME: slow way of avoiding repeated add+remove+change
+                        lines = [l for l in lines if not l.startswith(bcolors.ADDED_SIGN + ' ' + k) and not l.startswith(bcolors.REMOVED_SIGN + ' ' + k)]
+                        lines.append(bcolors.WARNING + ">" + bcolors.ENDC + " %s" % (matchedline))
 
                     sorted_lines = sorted(lines, key=lambda l: (l[2:], l[0]))
 

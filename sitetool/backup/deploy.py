@@ -44,7 +44,7 @@ class BackupDeployCommand():
 
         if self.list:
             logger.info("Listing backups that would be selected by this filter:")
-            command = BackupListCommand(self.st)
+            command = BackupListCommand(self.ctx)
             command.src = self.src
             return command.run()
 

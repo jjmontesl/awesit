@@ -84,14 +84,23 @@ class LocalFiles(Files):
         """
         Archives files and provide a path for the archive file.
         """
-        #backup_path = "/tmp/sitetool-files-backup.tgz"
         backup_path = tempfile.mktemp(prefix='sitetool-tmp-files-backup-')
         final_path = os.path.expanduser(os.path.join(self.path))
 
-        logger.info("Archiving files (local) from %s to %s", final_path, backup_path)
-        subprocess.call(["tar", "czf", backup_path, '-C', final_path, '.'])
+        logger.info("Resolving files to be archived.")
+        filelist = self.file_list('')
+        size = sum([f.size for f in filelist]) if filelist else 0
+
+        # Write filelist to file
+        filelist_path = tempfile.mktemp(prefix='sitetool-tmp-files-backup-filelist-')
+        with open(filelist_path, "w") as f:
+            f.write("\n".join([x.relpath for x in filelist]))
+
+        logger.info("Archiving %d local files (%.1fM) from %s to %s", len(filelist), size / (1024 * 1024), final_path, backup_path)
+        subprocess.call(["tar", "czf", backup_path, '-C', final_path, '--files-from', filelist_path])
 
         backup_md5sum = None
+        os.unlink(filelist_path)
 
         return (backup_path, backup_md5sum)
 

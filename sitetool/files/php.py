@@ -20,8 +20,6 @@ class PHPFiles(Files):
     '''
 
     url = None
-    path = None
-    exclude = None
 
     ignore_list_errors = False
 
@@ -74,12 +72,17 @@ class PHPFiles(Files):
 
         final_path = os.path.join(self.path)
 
+        logger.info("Resolving files to be archived.")
+        filelist = self.file_list('')
+        size = sum([f.size for f in filelist]) if filelist else 0
+
         url = self.url
         data = {'secret': self.secret,
                 'command': 'file_backup',
-                'path': final_path}
+                'path': final_path,
+                'filelist': [f.relpath for f in filelist]}
 
-        logger.info("Archiving files through PHP connector (url: %s, path: %s)", url, final_path)
+        logger.info("Archiving %d files (%.1fM) through PHP connector (url: %s, path: %s)", len(filelist), size / (1024 * 1024), url, final_path)
 
         r = requests.post(url, data)
 

@@ -31,7 +31,7 @@ class SQLiteDatabase(SSHShellAdaptor):
 
         with self.ssh_context() as c:
             sql = "select name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
-            command = 'sqlite3 -csv "%s" "%s"' % (self.db_path, sql)
+            command = 'sqlite3 -csv "%s" "%s"' % (self.db_name, sql)
             output = None
             try:
                 if self.sudo:
@@ -58,7 +58,7 @@ class SQLiteDatabase(SSHShellAdaptor):
 
             for table in tables:
                 sql = "select * from '%s';" % table
-                command = 'sqlite3 -csv -header "%s" "%s"' % (self.db_path, sql)
+                command = 'sqlite3 -csv -header "%s" "%s"' % (self.db_name, sql)
                 #logger.debug("Dumping SQLite data in CSV format: %s" % command)
 
                 output = None
@@ -84,6 +84,8 @@ class SQLiteDatabase(SSHShellAdaptor):
         fileio = io.StringIO(output)
         #reader = csv.DictReader(fileio, delimiter=',', quotechar='"')
         reader = csv.reader(fileio)
+        next(reader, None)
+
         for row in reader:
             items.append(row)
 
