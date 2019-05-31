@@ -43,11 +43,11 @@ class SiteTool():
                 #'db-sync': DatabaseSyncCommand,
 
                 #'data-export': DataExportCommand,
-                #'data-sync': DataImportCommand,
+                #'data-diff': DataDiffCommand, (?)
+                #'data-sync': DataSyncCommand, (import?)
 
                 #'diff': CommonDiffCommand,
                 #'sync': CommonSyncCommand,
-
 
                 'joomla-info': JoomlaInfoCommand,  # ? (w/ extensions, status, etc...)
                 #'joomla-upgrade': JoomlaExtensionsUpgradeCommand,
@@ -55,7 +55,6 @@ class SiteTool():
                 #'joomla-ext-list': JoomlaExtensionsListCommand,
                 #'joomla-ext-upgrade': JoomlaExtensionsUpgradeCommand, (in upgrade ?)
                 #'joomla-ext-install': JoomlaExtensionsInstallCommand,
-
                 #'joomla-data-export': JoomlaExportCommand, ? (or generic export/import providers, writing objects to disk?)
                 #'joomla-data-import': JoomlaImportCommand, ?
 

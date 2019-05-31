@@ -13,10 +13,10 @@ import warnings
 from sitetool.core.exceptions import SiteToolException
 from sitetool.files.files import SiteFile
 import fabric
+import pathspec
 
 
 logger = logging.getLogger(__name__)
-
 
 
 class SSHFiles():
@@ -24,6 +24,7 @@ class SSHFiles():
     '''
 
     path = None
+
     exclude = None
 
     user = None
@@ -82,6 +83,20 @@ class SSHFiles():
             else:
                 c.run('rm "%s"' % final_path)
 
+    def file_matches(self, rel_path, excludes):
+        matches = False
+        if excludes:
+            spec = pathspec.PathSpec.from_lines('gitwildmatch', excludes)
+            if spec.match_file(rel_path[1:]):
+                matches = True
+        return matches
+
+    def file_excluded(self, rel_path):
+
+        excludes = self.exclude
+
+        return self.file_matches(rel_path, excludes)
+
     def file_list(self, remote_path, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
@@ -113,13 +128,9 @@ class SSHFiles():
             file_path_abs = path
             file_path_rel = "/" + file_path_abs[len(final_path):]
 
-            matches = False
-            if self.exclude:
-                for exclude in self.exclude:
-                    if file_path_rel.startswith(exclude):
-                        matches = True
-                        break
-            if matches:
+
+            excluded = self.file_excluded(file_path_rel)
+            if excluded:
                 continue
 
             mtime = datetime.datetime.strptime(ctime.split(".")[0], '%Y-%m-%d+%H:%M:%S')

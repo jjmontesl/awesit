@@ -4,6 +4,7 @@ import webbrowser
 import argparse
 import json
 import itertools
+from collections import defaultdict
 
 
 class JoomlaSite():
@@ -77,13 +78,15 @@ class JoomlaInfoCommand():
         parser = argparse.ArgumentParser(prog="sitetool sites", description=self.COMMAND_DESCRIPTION)
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
         parser.add_argument("-j", "--json", action="store_true", default=False, help="dump all information in json format")
-        parser.add_argument("-v", "--verbose", action="store_true", default=False, help="show extra information (extensions...)")
+        parser.add_argument("-v", "--verbose", action="store_true", default=False, help="show more information")
+        parser.add_argument("-e", "--extensions", action="store_true", default=False, help="list extensions")
 
         args = parser.parse_args(args)
 
         self.src = args.source
         self.json = args.json
         self.verbose = args.verbose
+        self.extensions = args.extensions
 
     def run(self):
         """
@@ -126,13 +129,12 @@ class JoomlaInfoCommand():
                     info['info']['phpversion'] ))
 
                 extensions = info['extensions'].keys()
-                ext_com = [e for e in extensions if e.lower().startswith("com_")]
-                ext_mod = [e for e in extensions if e.lower().startswith("mod_")]
-                ext_plg = [e for e in extensions if e.lower().startswith("plg_")]
-                ext_files = [e for e in extensions if e.lower().startswith("files_")]
-                print("  %d extensions (com: %d, mod: %d, plg: %d, files: %d, other: %d)" % (
-                    len(extensions), len(ext_com), len(ext_mod), len(ext_plg), len(ext_files),
-                    len(extensions) - (len(ext_com) + len(ext_mod) + len(ext_plg) + len(ext_files))))
+                ext_groups = defaultdict(lambda: 0)
+                for e in info['extensions'].values():
+                    ext_groups[e['type']] += 1
+                ext_text = ", ".join(['%s: %d' % (k, c) for k, c in ext_groups.items()])
+
+                print("  %d extensions (%s)" % (len(extensions), ext_text))
 
                 directories = info['directories'].items()
                 dir_non_writable = [d for d in directories if not d[1]['writable']]
@@ -141,16 +143,12 @@ class JoomlaInfoCommand():
 
                 print("  %s" % (site['joomla'].url))
 
-            '''
-            if self.info:
-                if 'db' in site:
-                    print("  - db:    %s (%s)" % (getattr(site, 'db', ""), site['db'].__class__.__name__))
-                print("  - files: %s (%s)" % (site['files'].path, site['files'].__class__.__name__))
-                if 'git' in site:
-                    print("  - git:   branch '%s'" % (site['git'].branch))
-                print()
-            '''
-
-
+            if self.extensions:
+                print("  Extensions (%d):" % len(info['extensions']))
+                for key, e in sorted(info['extensions'].items(), key=lambda x: (x[1]['type'], x[0])):
+                    print("    %-34s %8s %s %10s" % (
+                        key, e['version'],
+                        'D' if e['state'] != 'Enabled' else ' ',
+                        e['type']))
 
         print("Listed Joomla sites: %d" % (count))

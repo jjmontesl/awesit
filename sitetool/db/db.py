@@ -60,7 +60,7 @@ class DatabaseSerializeCommand():
     '''
     '''
 
-    COMMAND_DESCRIPTION = 'Dump database tables into serialized format usable to calculate differences.'
+    COMMAND_DESCRIPTION = 'Dump database rows'
 
     def __init__(self, sitetool):
         self.st = sitetool
@@ -106,7 +106,7 @@ class DatabaseDiffCommand():
     '''
     '''
 
-    COMMAND_DESCRIPTION = 'Compare data in two databases with same schema.'
+    COMMAND_DESCRIPTION = 'Compare data in two databases with same schema'
 
     def __init__(self, sitetool):
         self.st = sitetool

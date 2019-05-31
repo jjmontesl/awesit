@@ -69,7 +69,7 @@ class SitesListCommand():
     def __init__(self, sitetool):
         self.st = sitetool
         self.src = None
-        self.info = False
+        self.verbose = False
         self.files = False
         self.backups = False
 
@@ -77,7 +77,7 @@ class SitesListCommand():
 
         parser = argparse.ArgumentParser(prog="sitetool sites", description=self.COMMAND_DESCRIPTION)
         parser.add_argument("source", default="*:*", nargs='?', help="site:env - site environment filter")
-        parser.add_argument("-i", "--info", action="store_true", default=False, help="show site configuration info")
+        parser.add_argument("-v", "--verbose", action="store_true", default=False, help="show site configuration info")
         parser.add_argument("-f", "--files", action="store_true", default=False, help="calculate site files size")
         parser.add_argument("-b", "--backups", action="store_true", default=False, help="calculate site files size")
         parser.add_argument("--backup-sites", action="store", type=str, default="*:main", help="show backups information (optionally use a filter *:*)")
@@ -87,7 +87,7 @@ class SitesListCommand():
         self.src = args.source
         self.files = args.files
         self.backups = args.backups
-        self.info = args.info
+        self.verbose = args.verbose
 
         self.backup_sites = args.backup_sites
 
@@ -139,12 +139,13 @@ class SitesListCommand():
                                      backups_info_text,
                                      label))
 
-            if self.info:
+            if self.verbose:
                 if 'db' in site:
-                    print("  - db:    %s (%s)" % (getattr(site, 'db', ""), site['db'].__class__.__name__))
-                print("  - files: %s (%s)" % (site['files'].path, site['files'].__class__.__name__))
+                    print("  db:    %s (%s)" % (getattr(site, 'db', ""), site['db'].__class__.__name__))
+                if 'files' in site:
+                    print("  files: %s (%s)" % (site['files'].path, site['files'].__class__.__name__))
                 if 'git' in site:
-                    print("  - git:   branch '%s'" % (site['git'].branch))
+                    print("  git:   branch '%s'" % (site['git'].branch))
                 print()
 
         print("Listed sites: %d" % (count))

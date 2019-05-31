@@ -137,15 +137,6 @@ Copy it to your home directory with name `.sitetool.conf` and
     sit joomla-info mysite:prod --json | less
 
 
-
-    sitetool joomla-data-merge testsite1:dev :prod --models:articles,products --overwrite --noop
-    sitetool joomla-data-export --format:filedir testsite1:prod ~/sites/testsite1 --models:articles,categories
-    sitetool joomla-datadir?-import --format:filedir ~/sites/testsite1 testsite1:prod --models:articles,categories --background
-
-    sitetool joomla-extension-install testsite1:dev <extension.zip>
-    sitetool joomla-extension-list *:prod  # testsite1:dev  # List extensions and versions and upgrades
-
-
 ## Documentation
 
 
