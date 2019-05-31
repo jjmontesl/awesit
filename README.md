@@ -11,10 +11,10 @@ Features:
 - Backup and restore MySQL databases.
 - Manage different site environments (production, staging, development...).
 - Manage (list and delete) backup files and backup storages.
-- Access files locally or through SSH, SFTP, FTP, SFTP...
+- Access files locally or through SSH, SFTP, FTP...
 - Access files and databases through a PHP helper script.
 
-(See the Examples section below for more information)
+See the Examples section below for more information.
 
 
 ## Usage
@@ -82,7 +82,7 @@ Copy it to your home directory with name `.sitetool.conf` and
 **Site Management**
 
     $ # List configured sites, computing their size
-    $ sitetool sites -f
+    $ sit sites -f
 
     backup:main      [ 4865.9M /    17 files] (an hour ago) ~/sitetool/backup/
     backup:testssh   [    8.5M /     2 files] (16 minutes ago) /tmp/sitetoolbackup/
@@ -98,13 +98,13 @@ Copy it to your home directory with name `.sitetool.conf` and
 **Backups**
 
     $ # Backup a site (to the default storage: `backup:main`)
-    $ sitetool backup site1:prod
+    $ sit backup site1:prod
 
     $ # Backup a site to a different storage
-    $ sitetool backup site1:prod backup:external-hd
+    $ sit backup site1:prod backup:external-hd
 
     $ # List backups
-    $ sitetool backup-list
+    $ sit backup-list
 
     backup:main           site1:prod    -1   318.7M site1-prod-20190524-215511-files.tar.gz (19 hours ago)
     backup:main           site2:prod    -1  1992.8M site2-prod-20190524-214501-files.tar.gz (19 hours ago)
@@ -121,17 +121,17 @@ Copy it to your home directory with name `.sitetool.conf` and
 
 
     # Deploy a site last backup to development environment
-    sitetool deploy ::site1:prod:-1 site1:dev
+    sit deploy ::site1:prod:-1 site1:dev
 
 **Browser**
 
     # Open a browser tab for a site
-    sitetool browser testsite1:prod
+    sit browser testsite1:prod
 
 **Joomla sites management**
 
-    # List Joomla sites, their versions and extensions
-    sit joomla-info
+    # List Joomla sites, with extensions list and verbose info
+    sit joomla-info -v -e
 
     # Dump detailed Joomla information in JSON format (and pipe output through less)
     sit joomla-info mysite:prod --json | less

@@ -11,12 +11,13 @@ import stat
 import datetime
 from dateutil import tz
 
-from sitetool.files.files import SiteFile
+from sitetool.files.files import Files, SiteFile
+
 
 logger = logging.getLogger(__name__)
 
 
-class LocalFiles():
+class LocalFiles(Files):
     '''
     '''
 
@@ -59,17 +60,7 @@ class LocalFiles():
                 #print(file)
 
                 file_path_abs = os.path.join(root, file)
-                file_path_rel = "/" + file_path_abs[len(final_path):]
-
-                matches = False
-                if self.exclude:
-                    for exclude in self.exclude:
-                        if file_path_rel.startswith(exclude):
-                            matches = True
-                            break
-                if matches:
-                    continue
-
+                file_path_rel = file_path_abs[len(final_path):]
 
                 try:
                     stats = os.stat(file_path_abs)
@@ -82,6 +73,9 @@ class LocalFiles():
 
                 except Exception as e:
                     logger.warn(e)
+
+        # Excludes
+        result = self.files_filtered(result)
 
         return result
 

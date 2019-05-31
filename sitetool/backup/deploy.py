@@ -20,8 +20,8 @@ class BackupDeployCommand():
 
     COMMAND_DESCRIPTION = 'Deploys a backup to a given environment'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -48,9 +48,7 @@ class BackupDeployCommand():
             command.src = self.src
             return command.run()
 
-        self.ctx = self.st.config
-        backupmanager = BackupManager(self.st)
-
+        backupmanager = self.ctx.get('backups')
         #(backup_site_name, backup_site_env) = self.src.split(":")[0:2]
         #(src_site_name, src_site_env) = self.src.split(":")[2:4]
         (target_site_name, target_site_env) = Site.parse_site_env(self.dst)
@@ -70,21 +68,21 @@ class BackupDeployCommand():
 
         backup_site = job.env_backup
         src_site = job.env_site
-        target_site = self.ctx['sites'][target_site_name]['envs'][target_site_env]
+        target_site = self.ctx.get('sites').site_env(target_site_name, target_site_env)
 
         # Copy and restore files
         job_filename = os.path.basename(job.relpath)
-        backup_path = '%s/%s/%s' % (src_site['site']['name'], src_site['name'], job_filename)
-        tmpfile_path = backup_site['files'].file_get(backup_path)
+        backup_path = '%s/%s/%s' % (src_site.site.name, src_site.name, job_filename)
+        tmpfile_path = backup_site.comp('files').file_get(backup_path)
 
         # TODO: type shall be defined by BackupManager
         if job_filename.endswith('-files.tar.gz'):
 
-            target_site['files'].restore(tmpfile_path)
+            target_site.comp('files').restore(tmpfile_path)
             os.unlink(tmpfile_path)
 
         elif job_filename.endswith('-db.tar.gz'):
 
-            target_site['db'].restore(tmpfile_path)
+            target_site.comp('db').restore(tmpfile_path)
             os.unlink(tmpfile_path)
 

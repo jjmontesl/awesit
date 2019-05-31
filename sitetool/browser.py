@@ -6,6 +6,7 @@ import datetime
 
 from sitetool.sites import Site
 import webbrowser
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ class BrowserCommand():
 
     COMMAND_DESCRIPTION = 'Opens a browser tab pointing to a site'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -34,13 +35,13 @@ class BrowserCommand():
         a single "archived artifact" for each.
         """
 
-        self.ctx = self.st.config
-
         (src_site_name, src_site_env) = Site.parse_site_env(self.target)
-        site = self.ctx['sites'][src_site_name]['envs'][src_site_env]
+        site = self.ctx.get('sites').site_env(src_site_name, src_site_env)
 
-        url = site['url']
-
-        logger.info("Opening browser for [%s]: %s", self.target, url)
-        webbrowser.open_new_tab(url)
+        if site.url:
+            logger.info("Opening browser for '%s': %s", self.target, site.url)
+            webbrowser.open_new_tab(site.url)
+        else:
+            logger.warn("No URL defined for site '%s'", self.target)
+            sys.exit(1)
 

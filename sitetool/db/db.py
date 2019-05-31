@@ -19,7 +19,7 @@ import csv
 logger = logging.getLogger(__name__)
 
 
-class SSHShellAdaptor(object):
+class SSHShellAdaptor():
     """
     """
 
@@ -62,8 +62,8 @@ class DatabaseSerializeCommand():
 
     COMMAND_DESCRIPTION = 'Dump database rows'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -78,13 +78,11 @@ class DatabaseSerializeCommand():
         """
         """
 
-        self.ctx = self.st.config
-
         dt_start = datetime.datetime.utcnow()
 
         (site_name, site_env) = Site.parse_site_env(self.site)
-        site = self.ctx['sites'][site_name]['envs'][site_env]
-        db = site['db']
+        site = self.ctx.get('sites').site_env(site_name, site_env)
+        db = site.comp('db')
 
         logger.debug("Database serialization: %s", db.get_name())
 
@@ -108,8 +106,8 @@ class DatabaseDiffCommand():
 
     COMMAND_DESCRIPTION = 'Compare data in two databases with same schema'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -128,8 +126,6 @@ class DatabaseDiffCommand():
         """
         """
 
-        self.ctx = self.st.config
-
         dt_start = datetime.datetime.utcnow()
 
         logger.debug("DB differences: %s - %s", self.site_a, self.site_b)
@@ -137,11 +133,11 @@ class DatabaseDiffCommand():
         (site_a_name, site_a_env) = Site.parse_site_env(self.site_a)
         (site_b_name, site_b_env) = Site.parse_site_env(self.site_b)
 
-        site_a = self.ctx['sites'][site_a_name]['envs'][site_a_env]
-        site_b = self.ctx['sites'][site_b_name]['envs'][site_b_env]
+        site_a = self.ctx.get('sites').site_env(site_a_name, site_a_env)
+        site_b = self.ctx.get('sites').site_env(site_b_name, site_b_env)
 
-        db_a = site_a['db']
-        db_b = site_b['db']
+        db_a = site_a.comp('db')
+        db_b = site_b.comp('db')
 
         logger.debug("Serializing databases")
 

@@ -1,13 +1,18 @@
-import yaml
-import requests_html
-import webbrowser
-import argparse
-import json
-import itertools
+# SiteTool
+# 2019
+
 from collections import defaultdict
+import argparse
+import itertools
+import json
+import webbrowser
+import yaml
+
+from sitetool.core.components import SiteComponent
+import requests_html
 
 
-class JoomlaSite():
+class JoomlaSite(SiteComponent):
     '''
     '''
 
@@ -69,8 +74,8 @@ class JoomlaInfoCommand():
 
     COMMAND_DESCRIPTION = 'Show information about Joomla installations'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
         self.src = None
 
     def parse_args(self, args):
@@ -92,21 +97,19 @@ class JoomlaInfoCommand():
         """
         """
 
-        self.ctx = self.st.config
-
-        sites = self.st.sites.list_sites(self.src)
+        sites = self.ctx.get('sites').list_sites(self.src)
 
         count = 0
-        for site in sorted(sites, key=lambda x: (x['site']['name'], x['name'])):
+        for site in sorted(sites, key=lambda x: x.key()):
 
-            if 'joomla' not in site: continue
+            if 'joomla' not in site.config: continue
 
             count += 1
 
-            key = (site['site']['name'], site['name'])
-            label = site['url'] if 'url' in site else '-'
+            key = site.key()
+            label = site.url if site.url else '-'
 
-            info = site['joomla'].joomla_info()
+            info = site.comp('joomla').joomla_info()
 
             # If JSON, print the result
             if self.json:
@@ -115,13 +118,13 @@ class JoomlaInfoCommand():
 
             if not self.verbose:
                 print("%-20s %s (%d extensions) - PHP %s" % (
-                    ("%s:%s" % (site['site']['name'], site['name'])),
+                    site.selector,
                     info['info']['version'],
                     len(info['extensions']),
                     info['info']['phpversion'] ))
 
             else:
-                print("%-20s" % (("%s:%s" % (site['site']['name'], site['name']))))
+                print("%-20s" % (site.selector))
 
                 print("  %s (%d extensions) - PHP %s" % (
                     info['info']['version'],
@@ -141,7 +144,7 @@ class JoomlaInfoCommand():
                 print("  %d directories (%d non writable)" % (
                     len(directories), len(dir_non_writable)))
 
-                print("  %s" % (site['joomla'].url))
+                print("  %s" % (site.comp('joomla').url))
 
             if self.extensions:
                 print("  Extensions (%d):" % len(info['extensions']))

@@ -11,7 +11,7 @@ import tempfile
 import warnings
 
 from sitetool.core.exceptions import SiteToolException
-from sitetool.files.files import SiteFile
+from sitetool.files.files import Files, SiteFile
 import fabric
 import pathspec
 
@@ -19,7 +19,7 @@ import pathspec
 logger = logging.getLogger(__name__)
 
 
-class SSHFiles():
+class SSHFiles(Files):
     '''
     '''
 
@@ -37,7 +37,8 @@ class SSHFiles():
     #password = None
     #key = None
 
-    def initialize(self):
+    def initialize(self, ctx, site):
+        super().initialize(ctx, site)
         if self.host is None:
             raise SiteToolException("No host set for SSHFiles: %s", self)
 
@@ -83,20 +84,6 @@ class SSHFiles():
             else:
                 c.run('rm "%s"' % final_path)
 
-    def file_matches(self, rel_path, excludes):
-        matches = False
-        if excludes:
-            spec = pathspec.PathSpec.from_lines('gitwildmatch', excludes)
-            if spec.match_file(rel_path[1:]):
-                matches = True
-        return matches
-
-    def file_excluded(self, rel_path):
-
-        excludes = self.exclude
-
-        return self.file_matches(rel_path, excludes)
-
     def file_list(self, remote_path, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
@@ -126,17 +113,15 @@ class SSHFiles():
                 continue
 
             file_path_abs = path
-            file_path_rel = "/" + file_path_abs[len(final_path):]
-
-
-            excluded = self.file_excluded(file_path_rel)
-            if excluded:
-                continue
+            file_path_rel = file_path_abs[len(final_path):]
 
             mtime = datetime.datetime.strptime(ctime.split(".")[0], '%Y-%m-%d+%H:%M:%S')
             mtime = mtime.replace(tzinfo=pytz.utc)
 
             result.append(SiteFile(file_path_rel, int(size), mtime))
+
+        # Excludes
+        result = self.files_filtered(result)
 
         return result
 

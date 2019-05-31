@@ -47,6 +47,9 @@ class Bootstrap():
 
     def parse_args(self, st):
 
+        # Fixme: should receive a context class (there's also debug and
+        # config_path settings that could live in the context)
+
         program_name = os.path.basename(sys.argv[0])
 
         shortusage = '%s [-h] [-d] [-c CONFIG] command [command options]\n' % program_name
@@ -77,9 +80,9 @@ class Bootstrap():
             sys.exit(1)
 
         command_class = st.commands[args.command]
-        st.command = command_class(st)
+        st.command = command_class(st.ctx)
 
-        st.command.parse_args(unknown)  #args.rest)
+        st.command.parse_args(unknown)
 
     def read_config(self, st):
         final_path = os.path.expanduser(st.config_path)
@@ -96,6 +99,8 @@ class Bootstrap():
         except Exception as e:
             logger.error("Could not read configuration file: %s (%s)", st.config_path, e)
             sys.exit(1)
+
+        st.ctx.update(st.config)
 
         #logger.debug("SiteTool configuration: %s", st.config)
 
@@ -127,7 +132,9 @@ class Bootstrap():
 
     def main(self, app_name="SiteTool", app_version="0.0.1"):
 
-        st = SiteTool()
+        ctx = {}  # FIXME: Use a dedicated class?
+
+        st = SiteTool(ctx)
 
         self.parse_args(st)
         self.initialize_logging(st)
@@ -140,10 +147,13 @@ class Bootstrap():
         st.initialize()
 
         # Run command
-        try:
+        if not st.debug:
+            try:
+                st.command.run()
+            except KeyboardInterrupt as e:
+                logger.info("Process interrupted by keyboard interrupt.")
+        else:
             st.command.run()
-        except KeyboardInterrupt as e:
-            logger.info("Process interrupted by keyboard interrupt.")
 
         #logger.debug("Program finished.")
 

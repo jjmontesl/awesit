@@ -11,11 +11,14 @@ import stat
 import sys
 
 from sitetool.sites import Site
+from sitetool.core.components import SiteComponent
 from sitetool.core.util import timeago
 import difflib
 
+import pathspec
 
 logger = logging.getLogger(__name__)
+
 
 
 class SiteFile(namedtuple('SiteFile', 'relpath size mtime')):
@@ -29,6 +32,48 @@ class SiteFile(namedtuple('SiteFile', 'relpath size mtime')):
                                     self.index))
     '''
     pass
+
+
+class Files(SiteComponent):
+    """
+    Base objects for File connectors.
+
+    Files backup format is a .tar.gz archive with paths relative to the site path.
+    """
+
+    path = None
+    exclude = None
+
+    '''
+    def initialize(self):
+        if self.path is None:
+            raise SiteToolConfigException("No host set for SSHFiles: %s", self)
+    '''
+
+    def files_matches(self, relpaths, excludes):
+        """
+        Applies a file globbing pattern to a path.
+
+        NOTE: pathspec seems to require paths to start with no leading slash,
+        otherwise it fails to match general pattersn in the root dir.
+        """
+        matches = relpaths
+        if excludes:
+            spec = pathspec.PathSpec.from_lines('gitwildmatch', excludes)
+            matches = spec.match_files(relpaths)  #([paths_rel[1:] ... ]):
+        return matches
+
+    def files_excluded(self, relpaths):
+        """
+        """
+        excludes = self.setting('files.exclude', "array-extend", self.exclude)
+        return self.files_matches(relpaths, excludes)
+
+    def files_filtered(self, sitefiles):
+        excluded = self.files_excluded([f.relpath for f in sitefiles])
+        excluded_set = set(excluded)
+        result = [f for f in sitefiles if f.relpath not in excluded_set]
+        return result
 
 
 class FilesListCommand():
@@ -69,12 +114,11 @@ class FilesListCommand():
         logger.debug("Directory listing: %s", self.site)
 
         (site_name, site_env) = Site.parse_site_env(self.site)
-
-        site = self.ctx['sites'][site_name]['envs'][site_env]
+        site = self.ctx.get('sites').site_env(site_name, site_env)
 
         # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
 
-        files = site['files'].file_list('')
+        files = site.comp('files').file_list('')
         files.sort(key=lambda f: f.relpath)
 
         if self.by_size:
@@ -102,8 +146,8 @@ class FilesDiffCommand():
 
     COMMAND_DESCRIPTION = 'Show differences between two sites file trees'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -129,8 +173,6 @@ class FilesDiffCommand():
         """
         """
 
-        self.ctx = self.st.config
-
         dt_start = datetime.datetime.utcnow()
 
         # FIXME: This way of comparing (text-based) is incorrect regarding
@@ -144,13 +186,13 @@ class FilesDiffCommand():
         backup_date = datetime.datetime.now()
         backup_job_name = backup_date.strftime('%Y%m%d-%H%M%S')
 
-        site_a = self.ctx['sites'][site_a_name]['envs'][site_a_env]
-        site_b = self.ctx['sites'][site_b_name]['envs'][site_b_env]
+        site_a = self.ctx.get('sites').site_env(site_a_name, site_a_env)
+        site_b = self.ctx.get('sites').site_env(site_b_name, site_b_env)
 
         # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
 
-        files_a = site_a['files'].file_list('')
-        files_b = site_b['files'].file_list('')
+        files_a = site_a.comp('files').file_list('')
+        files_b = site_b.comp('files').file_list('')
 
         if self.ignore_time:
             files_a = [("%s %s" % (f.relpath, f.size), f) for f in files_a]
