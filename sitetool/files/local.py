@@ -49,7 +49,7 @@ class LocalFiles(Files):
         logger.debug("Deleting: %s", final_path)
         os.unlink(final_path)
 
-    def file_list(self, remote_path, depth=None):
+    def file_list(self, remote_path, depth=None, all=False):
         final_path = os.path.expanduser(os.path.join(self.path, remote_path))
 
         result = []
@@ -75,7 +75,8 @@ class LocalFiles(Files):
                     logger.warn(e)
 
         # Excludes
-        result = self.files_filtered(result)
+        if not all:
+            result = self.files_filtered(result)
 
         return result
 

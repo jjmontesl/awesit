@@ -82,8 +82,8 @@ class FilesListCommand():
 
     COMMAND_DESCRIPTION = 'List files in a site'
 
-    def __init__(self, sitetool):
-        self.st = sitetool
+    def __init__(self, ctx):
+        self.ctx = ctx
 
     def parse_args(self, args):
 
@@ -92,6 +92,7 @@ class FilesListCommand():
         parser.add_argument("-s", "--by-size", action="store_true", default=False, help="sort by size")
         parser.add_argument("-t", "--by-time", action="store_true", default=False, help="sort by time")
         parser.add_argument("-r", "--reverse", action="store_true", default=False, help="reverse ordering")
+        parser.add_argument("-a", "--all", action="store_true", default=False, help="show all files (excluded)")
 
         args = parser.parse_args(args)
 
@@ -99,12 +100,11 @@ class FilesListCommand():
         self.by_size = args.by_size
         self.by_time = args.by_time
         self.reverse = args.reverse
+        self.all = args.all
 
     def run(self):
         """
         """
-
-        self.ctx = self.st.config
 
         dt_start = datetime.datetime.utcnow()
 
@@ -118,7 +118,7 @@ class FilesListCommand():
 
         # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
 
-        files = site.comp('files').file_list('')
+        files = site.comp('files').file_list('', all=self.all)
         files.sort(key=lambda f: f.relpath)
 
         if self.by_size:

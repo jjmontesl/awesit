@@ -84,7 +84,7 @@ class SSHFiles(Files):
             else:
                 c.run('rm "%s"' % final_path)
 
-    def file_list(self, remote_path, depth=None):
+    def file_list(self, remote_path, all=False, depth=None):
 
         final_path = os.path.join(self.path, remote_path)
         logger.debug("Listing files through SSH: %s@%s:%s", self.get_user(), self.host, final_path)
@@ -121,7 +121,8 @@ class SSHFiles(Files):
             result.append(SiteFile(file_path_rel, int(size), mtime))
 
         # Excludes
-        result = self.files_filtered(result)
+        if not all:
+            result = self.files_filtered(result)
 
         return result
 
