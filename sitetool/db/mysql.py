@@ -9,6 +9,7 @@ import fabric
 from sitetool.db.db import SSHShellAdaptor
 import csv
 import io
+from sitetool.core.exceptions import SiteToolException
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +93,7 @@ class SSHMySQLDatabase(SSHShellAdaptor):
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
-                logger.warn("Error while listing MySQL database tables: %s" % e)
-                output = ''
+                raise SiteToolException("Error while listing MySQL database tables: %s" % e)
 
         tables = output.split("\n")
 

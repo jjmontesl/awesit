@@ -1,0 +1,84 @@
+
+settings:
+
+  #backup.target: "backup:main"
+  #backup.selector: "*:main"
+
+  files.exclude:
+    - ".project"
+    - ".pydevproject"
+    - ".git/"
+
+    - "/env/"
+    - "__pycache__/"
+    - "*.pyc"
+    - "*.egg-info/"
+
+  #db.exclude: None
+
+sites:
+
+  # Definition of backup storage
+  backup:
+    envs:
+      # By default, backup storage is named 'backup:main'
+      main:
+        backup_storage: True
+        files: !!python/object:sitetool.files.local.LocalFiles
+          path: "~/sitetool/backup/"
+
+      # Other backup stores (optional)
+      #external:
+      #  backup_storage: True
+      #  files: !!python/object:sitetool.files.local.LocalFiles
+      #    path: "/media/external/sitetool/backup/"
+      #remote:
+      #  backup_storage: True
+      #  files: !!python/object:sitetool.files.ssh.SSHFiles
+      #    path: "/tmp/sitetoolbackup/"
+      #    host: localhost
+
+  # User documents folder, sitetool can be used for backup purposes
+  documents:
+    envs:
+      prod:
+        files: !!python/object:sitetool.files.local.LocalFiles
+          path: "~/Documents"
+
+
+  # An example website
+  testjoomla1:
+
+    settings:
+      files.exclude: ["/.git", "/.project"]
+      db.exclude: []
+
+    envs:
+
+      # Development environment
+      dev:
+
+        url: "http://localhost:8080/"
+
+        # Access fiels through a SSH connection
+        files: !!python/object:sitetool.files.ssh.SSHFiles
+          host: 172.22.0.3  # localhost
+          user: root
+          password: test
+          port: 2222
+          path: "/var/www/html"
+          exclude: ["/README.txt", "/LICENSE.txt", "/tmp/*"]
+          readonly: [".htaccess"]
+
+        # Enables joomla actions on the site (eg. show Joomla version and extensions)
+        joomla: !!python/object:sitetool.joomla.joomla.JoomlaSite
+          url: http://localhost:8080
+          username: admin
+          password: test
+
+      # Temporary environment in /tmp (files only)
+      tmp:
+
+        files: !!python/object:sitetool.files.local.LocalFiles
+          path: "/tmp/testjoomla1/"
+

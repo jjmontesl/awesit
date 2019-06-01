@@ -14,6 +14,7 @@ from sitetool.files.files import FilesListCommand, FilesDiffCommand
 from sitetool.db.db import DatabaseSerializeCommand, DatabaseDiffCommand
 from sitetool.joomla.joomla import JoomlaInfoCommand
 from sitetool.core.components import SiteToolSettings
+from sitetool.data.data import DataFilesExportCommand
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class SiteTool():
                 'db-diff': DatabaseDiffCommand,
                 #'db-sync': DatabaseSyncCommand,
 
-                #'data-export': DataExportCommand,
+                'datafiles-export': DataFilesExportCommand,
                 #'data-diff': DataDiffCommand, (?)
                 #'data-sync': DataSyncCommand, (import?)
 

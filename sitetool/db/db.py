@@ -15,6 +15,7 @@ from sitetool.core.util import timeago, bcolors
 import difflib
 import fabric
 import csv
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +70,12 @@ class DatabaseSerializeCommand():
 
         parser = argparse.ArgumentParser(description=self.COMMAND_DESCRIPTION)
         parser.add_argument("site", help="site:env - site to serialize")
+        parser.add_argument("-j", "--json", action="store_true", default=False, help="serialize to JSON format")
 
         args = parser.parse_args(args)
 
         self.site = args.site
+        self.json = args.json
 
     def run(self):
         """
@@ -87,6 +90,10 @@ class DatabaseSerializeCommand():
         logger.debug("Database serialization: %s", db.get_name())
 
         db_serialized = db.serialize()
+
+        if self.json:
+            print(json.dumps(db_serialized, indent=4))
+            sys.exit(0)
 
         for (table_name, table) in db_serialized.items():
             if True:
@@ -167,14 +174,18 @@ class DatabaseDiffCommand():
         db_b = site_b.comp('db')
 
         if not db_a or not db_b:
-            logger.error("Both sites need to have a configured database to calculate data differences.")
+            logger.error("Both sites need to have a configured database to calculate data differences")
             sys.exit(1)
 
         logger.debug("Serializing databases")
 
         # TODO: Allow usage of files if serialized versions are stored
-        db_a_serialized = db_a.serialize()
-        db_b_serialized = db_b.serialize()
+        try:
+            db_a_serialized = db_a.serialize()
+            db_b_serialized = db_b.serialize()
+        except Exception as e:
+            logger.error("Could not access databases: %s", e)
+            sys.exit(2)
 
         logger.debug("Calculating data differences")
         tables_a = set(db_a_serialized.keys())
