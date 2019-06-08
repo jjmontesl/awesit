@@ -20,6 +20,8 @@ class JoomlaSite(SiteComponent):
     username = None
     password = None
 
+    url_initial = None
+
     def connect_joomla(self):
         pass
 
@@ -31,6 +33,9 @@ class JoomlaSite(SiteComponent):
 
         # Request loging page
         url = '%s/administrator/index.php' % (self.url)
+        if self.url_initial:
+            url = self.url_initial
+
         r = session.get(url)
 
         # Extract form fields

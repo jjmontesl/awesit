@@ -99,7 +99,8 @@ class DatabaseSerializeCommand():
             if True:
                 print("@%s" % table_name)
                 cw = csv.writer(sys.stdout)
-                for row in table:
+                cw.writerow(table['columns'] if table['columns'] else [])
+                for row in table['rows']:
                     #print(row)
                     cw.writerow(row)
                 print()
@@ -199,8 +200,8 @@ class DatabaseDiffCommand():
         total_rows_added = 0
         total_rows_deleted = 0
         for table in sorted(list(tables_a & tables_b)):
-            rows_a = set([tuple(r) for r in db_a_serialized[table]])
-            rows_b = set([tuple(r) for r in db_b_serialized[table]])
+            rows_a = set([tuple(r) for r in db_a_serialized[table]['rows']])
+            rows_b = set([tuple(r) for r in db_b_serialized[table]['rows']])
             rows_added = sorted(list(rows_a - rows_b))
             rows_removed = sorted(list(rows_b - rows_a))
 
@@ -209,7 +210,7 @@ class DatabaseDiffCommand():
                 total_rows_added += len(rows_added)
                 total_rows_deleted += len(rows_removed)
 
-                print(" %s (%+d, added: %d, removed: %d)" % (table, len(rows_added) - len(rows_removed), len(rows_added), len(rows_removed)))
+                print(bcolors.OKBLUE + "%% %s" % (table) + bcolors.ENDC + " (%+d, added: %d, removed: %d)" % (len(rows_added) - len(rows_removed), len(rows_added), len(rows_removed)))
                 if not self.stat:
 
                     lines = []

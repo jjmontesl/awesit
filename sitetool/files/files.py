@@ -12,7 +12,7 @@ import sys
 
 from sitetool.sites import Site
 from sitetool.core.components import SiteComponent
-from sitetool.core.util import timeago
+from sitetool.core.util import timeago, bcolors
 import difflib
 
 import pathspec
@@ -231,25 +231,28 @@ class FilesDiffCommand():
         size = 0
         for f in files_added:
             total_files_added += 1
-            lines.append("+%s" % files_a_dict[f][0])
+            lines.append(bcolors.ADDED_SIGN + bcolors.ADDED + "%s" % (files_a_dict[f][0], ) + bcolors.ENDC)
             size += files_a_dict[f][1].size
         for f in files_removed:
             total_files_deleted += 1
-            lines.append("-%s" % files_b_dict[f][0])
+            lines.append(bcolors.REMOVED_SIGN + bcolors.REMOVED + "%s" % (files_b_dict[f][0], ) + bcolors.ENDC)
 
         files_changed = list(files_a_set & files_b_set)
         files_changed = site_b.comp('files').filenames_filtered(files_changed)
         for f in files_changed:
-            if files_a_dict[f][0] != files_b_dict[f][0]:
+            if ((not self.ignore_time and files_a_dict[f][1].mtime != files_b_dict[f][1].mtime) or
+                files_a_dict[f][1].size != files_b_dict[f][1].size):
                 size += files_a_dict[f][1].size
                 total_files_changed += 1
                 #lines.append("-%s" % files_b_dict[f][0])
                 #lines.append("+%s" % files_a_dict[f][0])
-                direction = '>' if files_a_dict[f][1].mtime >= files_b_dict[f][1].mtime else '<'
-                lines.append("%s%s" % (direction, files_a_dict[f][0]))
+                direction = bcolors.CHANGED_RIGHT_SIGN if files_a_dict[f][1].mtime >= files_b_dict[f][1].mtime else bcolors.CHANGED_LEFT_SIGN
+                lines.append(("%s" % direction) + bcolors.CHANGED + ("%s" % (files_a_dict[f][0])) + bcolors.ENDC)
 
         sorted_lines = sorted(lines, key=lambda l: l[1:])
-        print("\n".join(sorted_lines))
+
+        if sorted_lines:
+            print("\n".join(sorted_lines))
 
         print(" source: %d files  target: %d files" % (len(files_a), len(files_b)))
         print(" %d file changes, %d file additions, %d file deletions (%.1fM data)" % (total_files_changed, total_files_added, total_files_deleted, size / (1024*1024)))

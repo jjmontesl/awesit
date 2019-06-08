@@ -10,7 +10,7 @@ import datetime
 logger = logging.getLogger(__name__)
 
 
-class bcolors:
+class bcolors_color:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -20,14 +20,38 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-    ADDED = '\033[92m'
-    REMOVED = '\033[91m'
-    CHANGED = '\033[93m'
+    ADDED = OKGREEN
+    REMOVED = FAIL
+    CHANGED = WARNING
 
     ADDED_SIGN = ADDED + '+' + ENDC
     REMOVED_SIGN = REMOVED + '-' + ENDC
     CHANGED_RIGHT_SIGN = CHANGED + '>' + ENDC
     CHANGED_LEFT_SIGN = CHANGED + '<' + ENDC
+
+
+class bcolors_nocolor:
+    HEADER = ''
+    OKBLUE = ''
+    OKGREEN = ''
+    WARNING = ''
+    FAIL = ''
+    ENDC = ''
+    BOLD = ''
+    UNDERLINE = ''
+
+    ADDED = OKGREEN
+    REMOVED = FAIL
+    CHANGED = WARNING
+
+    ADDED_SIGN = ADDED + '+' + ENDC
+    REMOVED_SIGN = REMOVED + '-' + ENDC
+    CHANGED_RIGHT_SIGN = CHANGED + '>' + ENDC
+    CHANGED_LEFT_SIGN = CHANGED + '<' + ENDC
+
+
+bcolors = bcolors_color
+
 
 def timeago(utcdatetime):
 

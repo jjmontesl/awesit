@@ -233,7 +233,7 @@ class SitesListCommand():
                                    timeago(size_data['dt_modification']) if size_data and size_data['dt_modification'] else '-'))
                 label = site.comp('files').path if 'files' in site.config else label
 
-            print("%-20s %s%s %s" % (site.selector,
+            print("%-26s %s%s %s" % (site.selector,
                                      files_info_text,
                                      backups_info_text,
                                      label))

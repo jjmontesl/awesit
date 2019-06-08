@@ -24,6 +24,7 @@ develop-eggs
 /ROADMAP
 /build
 
+/sitetool.conf
 /sitetool.conf.j
 
 /virtualenv

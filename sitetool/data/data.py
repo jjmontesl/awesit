@@ -70,7 +70,7 @@ class DataFilesExportCommand():
 
             logger.info("Exporting '%s' to: %s", table_name, table_path)
             # Walk rows
-            for row in table:
+            for row in table['rows']:
                 data = self.export_row(profile, table, row)
                 key = row[0]
                 with open(os.path.join(table_path, key + ".data"), "w") as f:
@@ -78,7 +78,13 @@ class DataFilesExportCommand():
 
     def export_row(self, profile, table, row):
         text = ""
-        for field in row:
-            text  = text + field + "\n"
+
+        try:
+            for idx, field in enumerate(table['columns']):
+                #text = text + '%s: %s\n' % (field, row[idx] if idx < len(row) else '')
+                text = text + '%s: %s\n' % (field, row[idx])
+        except Exception as e:
+            logger.warn("Could not export data file for table '%s' (field: %s-%s) row: %s", table['name'], idx, field, e)
+
         return text
 

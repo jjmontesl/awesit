@@ -39,6 +39,7 @@ setup(
         "dateutils >= 0.6.6",
         "fabric >= 2.4.0",
         "humanize >= 0.5.1",
+        "requests >= 2.22.0",
         "requests_html >= 0.10.0",
         "pathspec >= 0.5.9"
     ],

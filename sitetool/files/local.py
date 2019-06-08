@@ -49,7 +49,7 @@ class LocalFiles(Files):
         logger.debug("Deleting: %s", final_path)
         os.unlink(final_path)
 
-    def file_list(self, remote_path, depth=None, all=False):
+    def file_list(self, remote_path, all=False):
         final_path = os.path.expanduser(os.path.join(self.path, remote_path))
 
         result = []

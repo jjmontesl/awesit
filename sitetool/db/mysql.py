@@ -120,13 +120,20 @@ class SSHMySQLDatabase(SSHShellAdaptor):
                         output = c.sudo(command, hide=True)
                     else:
                         output = c.run(command, hide=True)
-                    output = output.stdout.strip()
+                    output = output.stdout  #.strip()
                 except Exception as e:
                     # Assume the directory does not exist, but this is bad error handling
-                    logger.warn("Error while serializing SQLite database: %s" % e)
+                    logger.warn("Error while serializing MySQL database: %s" % e)
                     output = ''
 
-                items[table] = self._process_table_data(output)
+                output = output.replace("\r", "")
+
+                rows = self._process_table_data(output)
+                items[table] = {'name': table,
+                                'columns': rows[0] if rows else None,
+                                'rows': rows[1:] if rows else [],
+                                'key': None,
+                                'schema': None}
 
         return items
 

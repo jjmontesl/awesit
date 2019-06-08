@@ -9,6 +9,7 @@ import yaml
 
 from sitetool.core.sitetool import SiteTool
 import warnings
+from sitetool.core import util
 #from Crypto.pct_warnings import RandomPool_DeprecationWarning
 
 
@@ -52,7 +53,7 @@ class Bootstrap():
 
         program_name = os.path.basename(sys.argv[0])
 
-        shortusage = '%s [-h] [-d] [-c CONFIG] command [command options]\n' % program_name
+        shortusage = '%s [-h] [--[no-]color] [-d] [-c CONFIG] command [command options]\n' % program_name
         usage = shortusage + "\n"
         usage = usage + "  Commands:\n"
         for command_name, command in sorted(st.commands.items()):
@@ -63,6 +64,11 @@ class Bootstrap():
         parser = argparse.ArgumentParser(usage=usage, add_help=False)  # description='', usage = ''
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
         parser.add_argument("-c", "--config", default="~/.sitetool.conf", help="config file")
+
+        exclusive_grp = parser.add_mutually_exclusive_group()
+        exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')
+        exclusive_grp.add_argument('--no-color', action='store_false', dest='color', help='no-color')
+
         parser.add_argument("command", nargs='?', default=None, help="command to run")
         #parser.add_argument("rest", nargs='*')
 
@@ -70,6 +76,7 @@ class Bootstrap():
 
         st.debug = args.debug
         st.config_path = args.config
+        st.color = args.color
 
         if args.command not in st.commands:
             if args.command:
@@ -139,8 +146,21 @@ class Bootstrap():
         self.parse_args(st)
         self.initialize_logging(st)
 
+        # Color
+        color = sys.stdout.isatty()
+        if st.color is not None:
+            color = st.color
+        st.color = color
+
+        if st.color is False:
+            for k in util.bcolors_color.__dict__.keys():
+                if k[0] == '_': continue
+                setattr(util.bcolors_color, k, getattr(util.bcolors_nocolor, k))
+
+        # Show info
         logger.debug("Starting %s %s" % (app_name, app_version))
 
+        # Read config and configure
         self.read_config(st)
         self.configure_logging(st)
 

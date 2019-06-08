@@ -52,7 +52,7 @@ Requires Python 3.6 or above.
 
 Clone the source repository:
 
-    git clone https://...
+    git clone https://github.com/jjmontesl/sitetool
 
 Enter the directory and install:
 
@@ -155,43 +155,9 @@ Copy it to your home directory with name `.sitetool.conf` and
 ## Documentation
 
 
-## TODO:
+## License
 
-- Add complete file ignore support to local, SSH and PHP files (currently LocalFiles uses ignores just for listing, not backup/restore)
+Sitetool is created and maintained by Pablo Arias and Jose Juan Montes.
 
-- Deploy files supporting diff and different merge strategies (ovewrite all, only newer, etc...).
-
-- Support backup tagging (and special "keep" tag for undeletion) (workaround: for now use a different store)
-- Implement better backup selectors (index, index-range, dates, tags, filename, resource type)
-- Extract dates from filenames (not modification date), make dates UTC.
-
-- Reconsider: individual/join jobs? / multiple resources / full/incremental:
-  Refactor backup to support different resources providing different files? or workaround using extra sites/env?
-
-- Fix database diff column ordering issue (or improve it and advance towards database data merge).
-  (convert serialized tables to {"rows": [], "columns": [], "pk": ...}
-
-- Fix: connect only once to each backup storage when exploring backups! (avoids hitting SSH connections)
-- Fix file dates comparison issue (local / UTC differences).
-- Fix: use proper temporary names for files during backup/deploy/upload/download! (could be conflicts with current implementation)
-
-- Backup scheduling (anacron style (?)
-
-- Normalize local and SSH command execution (?) (confusing in SQLite and MySQL/SSHMySQL ?)
-
-- (?) Joomla database export: https://github.com/2createStudio/shuttle-export
-
-- (?) Git: git before changes to be able to check diffs and and commits... (?) (files only)
-- (?) Monitoring: response times, check health (ie via PHP tool or custom regexps on URLs)
-- (?) Containers, Virtualization, Other tools... (Docker / Lando)
-
-**Requirements:**
-
-- "Replace" panel (list webs, backups, pending updates, security extensions...)
-- Backup and restore Joomla
-
-- Update some content (1-N articles or modules, w/ images)
-- Update an extension or extensions manually
-- Update outdated extensions automatically (joomla "button")
-- Update Joomla (through joomla "button")
+License definition is pending (AGPL, MIT or Apache licenses are being considered).
 
