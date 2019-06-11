@@ -27,14 +27,15 @@ class PHPFiles(Files):
 
         final_path = os.path.join(self.path, remote_path)
 
+        # TODO: allow RSA signing instead of pre-shared secret
+        # https://stackoverflow.com/questions/32505722/signing-data-using-openssl-with-python
+
         url = self.url
         data = {'secret': self.secret,
                 'command': 'file_list',
                 'path': final_path}
 
         logger.debug("Retrieving filelist through PHP connector (url: %s, path: %s)", url, final_path)
-
-        # TODO: Check response code
 
         try:
             r = requests.post(url, data)
@@ -45,6 +46,8 @@ class PHPFiles(Files):
             else:
                 logger.debug("Could not retrieve filelist information from PHP connector (%s): %s", url, e)
             return None
+
+        # TODO: Check response code
 
         result = []
         for file in fileinfo:

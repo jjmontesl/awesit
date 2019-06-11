@@ -191,7 +191,7 @@ class FilesDiffCommand():
         # FIXME: This way of comparing (text-based) is incorrect regarding
         # directory differences
 
-        logger.debug("Directory differences: %s - %s", self.site_a, self.site_b)
+        logger.debug("Directory differences: %s > %s", self.site_a, self.site_b)
 
         (site_a_name, site_a_env) = Site.parse_site_env(self.site_a)
         (site_b_name, site_b_env) = Site.parse_site_env(self.site_b)

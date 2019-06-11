@@ -30,6 +30,7 @@ function route_command($command) {
         return file_list($path);
     } else if ($command == 'file_backup') {
         $path = $_POST['path'];
+        $files = $_POST['files'];
         return file_backup($path);
     }
     else {
@@ -56,12 +57,13 @@ function file_list($path) {
 }
 
 // Archive files in a directory recursively
-function file_backup($path) {
+function file_backup($path, $files) {
 
     $archive_path = uniqid('sitetool-file-backup-') . '.tar';
 
     $ar = new PharData($archive_path);
     $ar->buildFromDirectory($path);
+    // TODO: Use list of files, see bottom of: https://www.php.net/manual/en/phardata.buildfromiterator.php
 
     $ar->compress(Phar::GZ);
 

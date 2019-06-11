@@ -5,6 +5,8 @@ settings:
   #backup.selector: "*:main"
 
   files.exclude:
+    - "*~"
+
     - ".project"
     - ".pydevproject"
     - ".git/"

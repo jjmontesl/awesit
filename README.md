@@ -10,11 +10,13 @@ It can also serve as a backup system and scheduler.
 Features:
 
 - Backup and restore files and databases across configured sites.
-- Backup and restore MySQL databases.
+- Backup and restore databases (currently MySQL).
 - Manage different site environments (production, staging, development...).
-- Manage (list and delete) backup files and backup storages.
+- Manage backups and backup storages.
 - Access files locally or through SSH, SFTP, FTP...
 - Access files and databases through a PHP helper script.
+- Calculate differences and synchronize files and data across environments.
+- List Joomla sites, version, PHP info, extensions...
 
 See the Examples section below for more information.
 
@@ -68,15 +70,15 @@ describes your different site projects and deployment environments.
 Sitetool requires information about the environments it manages.
 
 Configuration is done in YAML format. Configuration may eventually
-include templates and other files. It is recommended to keep
-your sitetool configuration versioned.
+include templates and other files. Depending on your use case,
+you may wish to keep your configuration files versioned.
 
 SiteTool reads by default configuration from user home `~/.sitetool.conf`.
 This can be changed using the `-c` command line option.
 
 You can find an example configuration in the `sitetool.conf.sample` file.
 Copy it to your home directory with name `.sitetool.conf` and
-**modify it** to reflect the sites you will be managing.
+**edit it** to reflect the sites you will be managing.
 
 
 ## Examples
@@ -97,7 +99,7 @@ Copy it to your home directory with name `.sitetool.conf` and
     ...
     Listed sites: 14
 
-**Backups**
+**Backup**
 
     $ # Backup a site (to the default storage: `backup:main`)
     $ sit backup site1:prod
@@ -108,29 +110,33 @@ Copy it to your home directory with name `.sitetool.conf` and
     $ # List backups
     $ sit backup-list
 
-    backup:main           site1:prod    -1   318.7M site1-prod-20190524-215511-files.tar.gz (19 hours ago)
-    backup:main           site2:prod    -1  1992.8M site2-prod-20190524-214501-files.tar.gz (19 hours ago)
-    backup:main           site3:prod    -1   113.7M site3-prod-20190525-000025-files.tar.gz (17 hours ago)
-    backup:main        gitolite:prod    -1  2248.7M gitolite-prod-20190525-002522-files.tar.gz (17 hours ago)
-    backup:main       testsite2:prod    -4     8.4M testsite2-prod-20190525-161658-files.tar.gz (an hour ago)
-    backup:main       testsite2:prod    -3     0.1M testsite2-prod-20190525-161658-db.tar.gz (an hour ago)
-    backup:main       testsite2:prod    -2     8.4M testsite2-prod-20190525-162048-files.tar.gz (an hour ago)
-    backup:main       testsite2:prod    -1     0.1M testsite2-prod-20190525-162048-db.tar.gz (an hour ago)
-    backup:testssh    testsite2:prod    -2     8.4M testsite2-prod-20190525-173754-files.tar.gz (21 minutes ago)
-    backup:testssh    testsite2:prod    -1     0.1M testsite2-prod-20190525-173754-db.tar.gz (21 minutes ago)
+    backup:main           site1:prod    1   318.7M site1-prod-20190524-215511-files.tar.gz (19 hours ago)
+    backup:main           site2:prod    1  1992.8M site2-prod-20190524-214501-files.tar.gz (19 hours ago)
+    backup:main           site3:prod    1   113.7M site3-prod-20190525-000025-files.tar.gz (17 hours ago)
+    backup:main        gitolite:prod    1  2248.7M gitolite-prod-20190525-002522-files.tar.gz (17 hours ago)
+    backup:main       testsite2:prod    4     8.4M testsite2-prod-20190525-161658-files.tar.gz (an hour ago)
+    backup:main       testsite2:prod    3     0.1M testsite2-prod-20190525-161658-db.tar.gz (an hour ago)
+    backup:main       testsite2:prod    2     8.4M testsite2-prod-20190525-162048-files.tar.gz (an hour ago)
+    backup:main       testsite2:prod    1     0.1M testsite2-prod-20190525-162048-db.tar.gz (an hour ago)
+    backup:testssh    testsite2:prod    2     8.4M testsite2-prod-20190525-173754-files.tar.gz (21 minutes ago)
+    backup:testssh    testsite2:prod    1     0.1M testsite2-prod-20190525-173754-db.tar.gz (21 minutes ago)
     ...
     Listed jobs: 19  Total size: 4874.4MB
 
+**Restore / Deploy**
 
     # Deploy a site last backup to development environment
-    sit deploy ::site1:prod:-1 site1:dev
+    sit deploy backup:main:site1:prod:1 site1:dev
 
 **Browser**
 
     # Open a browser tab for a site
     sit browser testsite1:prod
 
-**Joomla sites management**
+    # Open browser tabs for all environments of a site
+    sit browser testsite1:
+
+**Joomla sites**
 
     # List Joomla sites, with extensions list and verbose info
     sit joomla-info -v -e

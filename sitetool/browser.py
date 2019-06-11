@@ -35,13 +35,15 @@ class BrowserCommand():
         a single "archived artifact" for each.
         """
 
-        (src_site_name, src_site_env) = Site.parse_site_env(self.target)
-        site = self.ctx.get('sites').site_env(src_site_name, src_site_env)
+        #(src_site_name, src_site_env) = Site.parse_site_env(self.target)
+        #site = self.ctx.get('sites').site_env(src_site_name, src_site_env)
 
-        if site.url:
-            logger.info("Opening browser for '%s': %s", self.target, site.url)
-            webbrowser.open_new_tab(site.url)
-        else:
-            logger.warn("No URL defined for site '%s'", self.target)
-            sys.exit(1)
+        sites = self.ctx.get('sites').list_sites(self.target)
+        for site in sites:
+            if site.url:
+                logger.info("Opening browser for '%s': %s", self.target, site.url)
+                webbrowser.open_new_tab(site.url)
+            else:
+                logger.warn("No URL defined for site '%s'", site.selector)
+                #sys.exit(1)
 

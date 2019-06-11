@@ -119,4 +119,4 @@ class LocalFiles(Files):
             else:
                 raise
 
-        subprocess.call(["tar", "xf", path, '-C', final_path])
+        subprocess.call(["tar", "xf", path, '-p', '-C', final_path])

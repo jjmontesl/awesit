@@ -115,7 +115,7 @@ class BackupDeleteCommand():
     '''
     '''
 
-    COMMAND_DESCRIPTION = 'Delete backup jobs data (use with caution!)'
+    COMMAND_DESCRIPTION = 'Delete backup jobs data'
 
     def __init__(self, ctx):
         self.ctx = ctx

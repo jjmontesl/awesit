@@ -5,12 +5,7 @@ import functools
 import logging
 import os
 import sys
-import yaml
-
-from sitetool.core.sitetool import SiteTool
 import warnings
-from sitetool.core import util
-#from Crypto.pct_warnings import RandomPool_DeprecationWarning
 
 
 logger = logging.getLogger(__name__)
@@ -96,6 +91,7 @@ class Bootstrap():
 
         logger.debug("Reading Sitetool config from: %s", final_path)
         #logger.warn("TODO: Using YAML unsafe loader (use FullLoader instead).")
+        import yaml
         try:
             with open(final_path, 'r') as stream:
                 try:
@@ -139,40 +135,50 @@ class Bootstrap():
 
     def main(self, app_name="SiteTool", app_version="0.0.1"):
 
-        ctx = {}  # FIXME: Use a dedicated class?
+        try:
 
-        st = SiteTool(ctx)
+            ctx = {}  # FIXME: Use a dedicated class?
 
-        self.parse_args(st)
-        self.initialize_logging(st)
+            from sitetool.core.sitetool import SiteTool
+            st = SiteTool(ctx)
 
-        # Color
-        color = sys.stdout.isatty()
-        if st.color is not None:
-            color = st.color
-        st.color = color
+            self.parse_args(st)
+            self.initialize_logging(st)
 
-        if st.color is False:
-            for k in util.bcolors_color.__dict__.keys():
-                if k[0] == '_': continue
-                setattr(util.bcolors_color, k, getattr(util.bcolors_nocolor, k))
+            # Color
 
-        # Show info
-        logger.debug("Starting %s %s" % (app_name, app_version))
+            color = sys.stdout.isatty()
+            if st.color is not None:
+                color = st.color
+            st.color = color
 
-        # Read config and configure
-        self.read_config(st)
-        self.configure_logging(st)
+            from sitetool.core import util
+            if st.color is False:
+                for k in util.bcolors_color.__dict__.keys():
+                    if k[0] == '_': continue
+                    setattr(util.bcolors_color, k, getattr(util.bcolors_nocolor, k))
 
-        st.initialize()
+            # Show info
+            logger.debug("Starting %s %s" % (app_name, app_version))
+
+            # Read config and configure
+            self.read_config(st)
+            self.configure_logging(st)
+
+        except KeyboardInterrupt as e:
+            logger.warn("Process aborted by keyboard interrupt.")
+            sys.exit(1)
 
         # Run command
         if not st.debug:
             try:
+                st.initialize()
                 st.command.run()
             except KeyboardInterrupt as e:
-                logger.info("Process interrupted by keyboard interrupt.")
+                logger.warn("Process aborted by keyboard interrupt.")
+                sys.exit(1)
         else:
+            st.initialize()
             st.command.run()
 
         #logger.debug("Program finished.")
@@ -182,7 +188,11 @@ def main():
     """
     Application entry point.
     """
-    bootstrap = Bootstrap()
-    bootstrap.main()  # sys.argv[1:]
+    try:
+        bootstrap = Bootstrap()
+    except KeyboardInterrupt as e:
+        logger.warn("Process aborted by keyboard interrupt.")
+        sys.exit(1)
 
+    bootstrap.main()  # sys.argv[1:]
 

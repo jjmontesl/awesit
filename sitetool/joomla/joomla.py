@@ -5,11 +5,15 @@ from collections import defaultdict
 import argparse
 import itertools
 import json
+import logging
 import webbrowser
 import yaml
 
 from sitetool.core.components import SiteComponent
 import requests_html
+
+
+logger = logging.getLogger(__name__)
 
 
 class JoomlaSite(SiteComponent):
@@ -36,7 +40,11 @@ class JoomlaSite(SiteComponent):
         if self.url_initial:
             url = self.url_initial
 
-        r = session.get(url)
+        try:
+            r = session.get(url)
+        except Exception as e:
+            logger.debug("Could not access Joomla instance through HTTP at: %s", url)
+            return None
 
         # Extract form fields
         data = {}
@@ -121,6 +129,10 @@ class JoomlaInfoCommand():
                 print(json.dumps(info, indent=4))
                 continue
 
+            if not info:
+                print("%-20s Error retrieving info (%s)" % (site.selector, site.comp('joomla').url))
+                continue
+
             if not self.verbose:
                 print("%-20s %s (%d extensions) - PHP %s" % (
                     site.selector,
@@ -159,4 +171,5 @@ class JoomlaInfoCommand():
                         'D' if e['state'] != 'Enabled' else ' ',
                         e['type']))
 
-        print("Listed Joomla sites: %d" % (count))
+        if not self.json:
+            print("Listed Joomla sites: %d" % (count))

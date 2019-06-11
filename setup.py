@@ -35,7 +35,7 @@ setup(
 
     install_requires = [
         "pyyaml >= 5.1",
-        "fs >= 0.3.0",
+        "fs >= 2.4.7",
         "dateutils >= 0.6.6",
         "fabric >= 2.4.0",
         "humanize >= 0.5.1",

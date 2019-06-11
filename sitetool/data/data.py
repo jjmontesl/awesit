@@ -33,7 +33,7 @@ class DataFilesExportCommand():
 
         parser = argparse.ArgumentParser(description=self.COMMAND_DESCRIPTION)
         parser.add_argument("site", help="site:env - site to export")
-        #parser.add_argument("target", help="site:env|path - site or dir to export to")
+        #parser.add_argument("target", help="site:env - site or dir to export to")
         #parser.add_argument("profile", help="data profile to use")
 
         args = parser.parse_args(args)

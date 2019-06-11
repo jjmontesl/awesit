@@ -51,27 +51,26 @@ class FSFiles(Files):
             #real_path = real_exc.path  # remote_fs.getsyspath(e.path)
             #print(real_exc.filename)
             logger.warn("Could not access path '%s': %s (%s)" % (path, e, real_exc))
-            return True  # Ignore error
+            #return True  # Ignore error
+            return False
 
         #for (path, info) in remote_fs.walk.info(on_error=fs_walk_error):
         #    print(path)
 
         result = []
-        for (path, info) in remote_fs.walk.info(namespaces=['details'], on_error=fs_walk_error):
+        #for (path, info) in remote_fs.walk.info(namespaces=['details'], on_error=fs_walk_error):
+        for (path, info) in remote_fs.walk.info(on_error=fs_walk_error):
 
             if info.is_dir: continue
-
-            #with fs.open(path) as python_file:
-                #count += sum(1 for line in python_file if line.strip())
 
             file_path_abs = path
             file_path_rel = path[1:]
 
-            #try:
-            #    info = remote_fs.getinfo(path, namespaces=['details'])
-            #except Exception as e:
-            #    logger.warn("Could not obtain information of file: %s", path)
-            #    continue
+            try:
+                info = remote_fs.getinfo(path, namespaces=['details'])
+            except Exception as e:
+                logger.warn("Could not obtain information of file: %s", file_path_rel)
+                continue
 
             mtime_utc = info.modified.astimezone(pytz.utc)
 
