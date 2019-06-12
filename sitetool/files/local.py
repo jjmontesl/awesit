@@ -11,7 +11,9 @@ import stat
 import datetime
 from dateutil import tz
 
-from sitetool.files.files import Files, SiteFile
+from sitetool.files.files import Files, SiteFile, SiteFileList
+import time
+import pytz
 
 
 logger = logging.getLogger(__name__)
@@ -52,8 +54,19 @@ class LocalFiles(Files):
     def file_list(self, remote_path, all=False):
         final_path = os.path.expanduser(os.path.join(self.path, remote_path))
 
+        errors = []
         result = []
-        for root, dirs, files in os.walk(final_path):
+
+        def fs_walk_error(e):
+            #logger.warn(dir(e))
+            path = e.filename
+
+            if path == final_path: return
+
+            logger.debug("Could not access file '%s': %s", path, e)
+            errors.append(e)
+
+        for root, dirs, files in os.walk(final_path, onerror=fs_walk_error):
             #path = root.split(os.sep)
             #print((len(path) - 1) * '---', os.path.basename(root))
             for file in files:
@@ -68,8 +81,9 @@ class LocalFiles(Files):
                     local_zone = tz.tzlocal()
                     #ctime_local = datetime.datetime.fromtimestamp(stats[stat.ST_CTIME]).replace(tzinfo=local_zone)
                     mtime_local = datetime.datetime.fromtimestamp(stats[stat.ST_MTIME]).replace(tzinfo=local_zone)
+                    mtime_utc = mtime_local.astimezone(pytz.utc)
 
-                    result.append(SiteFile(file_path_rel, stats[stat.ST_SIZE], mtime_local))
+                    result.append(SiteFile(file_path_rel, stats[stat.ST_SIZE], mtime_utc))
 
                 except Exception as e:
                     logger.warn(e)
@@ -78,7 +92,7 @@ class LocalFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return result
+        return SiteFileList(result, errors)
 
     def archive(self):
         """
@@ -88,7 +102,7 @@ class LocalFiles(Files):
         final_path = os.path.expanduser(os.path.join(self.path))
 
         logger.info("Resolving files to be archived.")
-        filelist = self.file_list('')
+        filelist, errors = self.file_list('')
         size = sum([f.size for f in filelist]) if filelist else 0
 
         # Write filelist to file
@@ -97,7 +111,7 @@ class LocalFiles(Files):
             f.write("\n".join([x.relpath for x in filelist]))
 
         logger.info("Archiving %d local files (%.1fM) from %s to %s", len(filelist), size / (1024 * 1024), final_path, backup_path)
-        subprocess.call(["tar", "czf", backup_path, '-C', final_path, '--files-from', filelist_path])
+        subprocess.call(["tar", "czf", backup_path, '-C', final_path, '--ignore-failed-read', '--files-from', filelist_path])
 
         backup_md5sum = None
         os.unlink(filelist_path)

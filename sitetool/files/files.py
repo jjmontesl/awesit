@@ -16,6 +16,7 @@ from sitetool.core.util import timeago, bcolors
 import difflib
 
 import pathspec
+from sitetool.core import util
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,10 @@ class SiteFile(namedtuple('SiteFile', 'relpath size mtime')):
                                     self.env_site['name'],
                                     self.index))
     '''
+    pass
+
+
+class SiteFileList(namedtuple('SiteFileList', 'files errors')):
     pass
 
 
@@ -126,9 +131,9 @@ class FilesListCommand():
         (site_name, site_env) = Site.parse_site_env(self.site)
         site = self.ctx.get('sites').site_env(site_name, site_env)
 
-        files = site.comp('files').file_list('', all=self.all)
+        (files, errors) = site.comp('files').file_list('', all=self.all)
         if self.excluded:
-            files_all = site.comp('files').file_list('', all=True)
+            (files_all, errors_all) = site.comp('files').file_list('', all=True)
             files_set = set([f.relpath for f in files])
             files = [f for f in files_all if f.relpath not in files_set]
 
@@ -145,8 +150,8 @@ class FilesListCommand():
         total_size = 0
         for f in files:
             total_size += f.size
-            print("%20s %10s %s" % (
-                f.mtime,
+            print("%-20s %10s %s" % (
+                util.formatdate(f.mtime),
                 f.size,
                 f.relpath))
 
@@ -202,8 +207,8 @@ class FilesDiffCommand():
         site_a = self.ctx.get('sites').site_env(site_a_name, site_a_env)
         site_b = self.ctx.get('sites').site_env(site_b_name, site_b_env)
 
-        files_a = site_a.comp('files').file_list('')
-        files_b = site_b.comp('files').file_list('')
+        files_a, errors_a = site_a.comp('files').file_list('')
+        files_b, errors_b = site_b.comp('files').file_list('')
 
         if self.ignore_time:
             files_a = [("%s %s" % (f.relpath, f.size), f) for f in files_a]

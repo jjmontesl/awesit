@@ -151,7 +151,7 @@ class SiteManager(SiteToolComponent):
         last_date = 0
 
         if 'files' in site.config:
-            files = site.comp('files').file_list('')
+            files, errors = site.comp('files').file_list('')
             if files:
                 for file in files:
                     count += 1

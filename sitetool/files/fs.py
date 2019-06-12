@@ -10,7 +10,7 @@ import time
 import fs
 import pytz
 
-from sitetool.files.files import Files, SiteFile
+from sitetool.files.files import Files, SiteFile, SiteFileList
 import json
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ class FSFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return result
+        return SiteFileList(result, [])
 
     def archive(self):
         """

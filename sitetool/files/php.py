@@ -9,7 +9,7 @@ import logging
 import tempfile
 import pytz
 
-from sitetool.files.files import SiteFile, Files
+from sitetool.files.files import SiteFile, Files, SiteFileList
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ class PHPFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return result
+        return SiteFileList(result, errors)
 
     def archive(self):
         """
@@ -76,7 +76,7 @@ class PHPFiles(Files):
         final_path = os.path.join(self.path)
 
         logger.info("Resolving files to be archived.")
-        filelist = self.file_list('')
+        filelist, errors = self.file_list('')
         size = sum([f.size for f in filelist]) if filelist else 0
 
         url = self.url

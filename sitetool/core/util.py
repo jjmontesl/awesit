@@ -62,3 +62,11 @@ def timeago(utcdatetime):
 
     return humanize.naturaltime(localized_naive)
 
+
+def formatdate(utcdatetime):
+    to_zone = tz.tzlocal()
+    localized = utcdatetime.astimezone(to_zone)
+    localized_naive = datetime.datetime.fromtimestamp(time.mktime(localized.timetuple()))
+
+    return str(localized_naive)
+

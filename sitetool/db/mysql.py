@@ -36,6 +36,7 @@ class MySQLDatabase():
         with open(backup_path, 'w') as outfile:
             subprocess.call(["mysqldump", "-h", self.host, '-u', self.user, '-p%s' % self.password,
                              #'--column-statistics=0',
+                             '--skip-lock-tables',
                              '--add-drop-database', self.db], stdout=outfile)
 
         # FIXME: should be a tar_gz
@@ -161,9 +162,9 @@ class SSHMySQLDatabase(SSHShellAdaptor):
             output = None
             try:
                 if self.sudo:
-                    output = c.sudo('mysqldump -h %s -u %s -p%s --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
+                    output = c.sudo('mysqldump -h %s -u %s -p%s --skip-lock-tables --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
                 else:
-                    output = c.run('mysqldump -h %s -u %s -p%s --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)
+                    output = c.run('mysqldump -h %s -u %s -p%s --skip-lock-tables --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)
                 output = output.stdout.strip()
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling

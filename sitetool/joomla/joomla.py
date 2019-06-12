@@ -11,6 +11,7 @@ import yaml
 
 from sitetool.core.components import SiteComponent
 import requests_html
+from sitetool.core.exceptions import SiteToolException
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,11 @@ class JoomlaSite(SiteComponent):
         url = '%s/administrator/index.php?option=com_admin&view=sysinfo&format=json' % (self.url)
         r = session.get(url)
 
-        result = r.json()
+        try:
+            result = r.json()
+        except Exception as e:
+            logger.debug("Could not decode Joomla response: %s", r.text())
+            raise SiteToolException("Coud not decode Joomla info: %s", e)
 
         return result
 
@@ -130,18 +135,18 @@ class JoomlaInfoCommand():
                 continue
 
             if not info:
-                print("%-20s Error retrieving info (%s)" % (site.selector, site.comp('joomla').url))
+                print("%-30s Error retrieving info (%s)" % (site.selector, site.comp('joomla').url))
                 continue
 
             if not self.verbose:
-                print("%-20s %s (%d extensions) - PHP %s" % (
+                print("%-30s %s (%d extensions) - PHP %s" % (
                     site.selector,
                     info['info']['version'],
                     len(info['extensions']),
                     info['info']['phpversion'] ))
 
             else:
-                print("%-20s" % (site.selector))
+                print("%-30s" % (site.selector))
 
                 print("  %s (%d extensions) - PHP %s" % (
                     info['info']['version'],

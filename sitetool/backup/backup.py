@@ -317,7 +317,7 @@ class BackupManager(SiteToolComponent):
         # Obtain file list from files
         backup_path = '%s/%s' % (src_site_name, src_site_env)
         # FIXME: This hits backends (ie SSH) too much: list the entire backup site and then pick from results
-        files = env.comp('files').file_list(backup_path)
+        files, errors = env.comp('files').file_list(backup_path)
 
         jobs = []
 

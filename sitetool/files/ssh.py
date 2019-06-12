@@ -11,7 +11,7 @@ import tempfile
 import warnings
 
 from sitetool.core.exceptions import SiteToolException
-from sitetool.files.files import Files, SiteFile
+from sitetool.files.files import Files, SiteFile, SiteFileList
 import fabric
 import pathspec
 
@@ -94,14 +94,18 @@ class SSHFiles(Files):
             output = None
             try:
                 if self.sudo:
-                    output = c.sudo('[ -d "%s" ] && cd "%s" && sudo TZ=utc find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
+                    output = c.sudo('[ -d "%s" ] && cd "%s" && sudo TZ=utc find "%s" -type f -ignore_readdir_race -printf \'%%T+,%%T+,%%s,%%p\\n\' || true' % (final_path, self.path, final_path), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
                 else:
-                    output = c.run('[ -d "%s" ] && cd "%s" && TZ=utc find "%s" -type f -printf \'%%T+,%%T+,%%s,%%p\\n\'' % (final_path, self.path, final_path), hide=True)  # not self.st.debug, echo=not self.st.debug)
-                output = output.stdout.strip()
+                    output = c.run('[ -d "%s" ] && cd "%s" && TZ=utc find "%s" -type f -ignore_readdir_race -printf \'%%T+,%%T+,%%s,%%p\\n\' || true' % (final_path, self.path, final_path), hide=True)  # not self.st.debug, echo=not self.st.debug)
+                result = output
+                output = result.stdout.strip()
+                errors = result.stderr.strip()
             except Exception as e:
-                # Assume the directory does not exist, but this is bad error handling
-                #logger.warn("Error while listing files through SSH: %s" % e)
-                output = ''
+                logger.debug("Error while listing files through SSH: %s", e)
+                raise SiteToolException("Error while listing files through SSH: %s" % e)
+
+        if errors:
+            logger.warn("Errors listing files: %s", errors)
 
         result = []
         for line in output.split("\n"):
@@ -124,7 +128,7 @@ class SSHFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return result
+        return SiteFileList(result, [])
 
     def archive(self):
         """
@@ -137,7 +141,7 @@ class SSHFiles(Files):
         backup_md5sum = None
 
         logger.info("Resolving files to be archived.")
-        filelist = self.file_list('')
+        filelist, errors = self.file_list('')
         size = sum([f.size for f in filelist]) if filelist else 0
 
          # Write filelist to file
@@ -154,10 +158,10 @@ class SSHFiles(Files):
 
             logger.info("Archiving %d files (%.1fM) via SSH.", len(filelist), size / (1024 * 1024))
             if self.sudo:
-                c.sudo('tar czf "%s" -C "%s" --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
+                c.sudo('tar czf "%s" -C "%s" --ignore-failed-read --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
                 c.sudo('rm "%s"' % (remote_filelist_path))
             else:
-                c.run('tar czf "%s" -C "%s" --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
+                c.run('tar czf "%s" -C "%s" --ignore-failed-read --files-from "%s"' % (remote_backup_path, self.path, remote_filelist_path))
                 c.run('rm "%s"' % (remote_filelist_path))
 
         backup_path = self.file_get(remote_backup_path, base_path="/")

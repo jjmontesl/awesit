@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import warnings
+from sitetool.core.exceptions import SiteToolException
 
 
 logger = logging.getLogger(__name__)
@@ -170,16 +171,24 @@ class Bootstrap():
             sys.exit(1)
 
         # Run command
-        if not st.debug:
-            try:
+        try:
+
+            if not st.debug:
+                try:
+                    st.initialize()
+                    st.command.run()
+                except KeyboardInterrupt as e:
+                    logger.warn("Process aborted by keyboard interrupt.")
+                    sys.exit(1)
+            else:
                 st.initialize()
                 st.command.run()
-            except KeyboardInterrupt as e:
-                logger.warn("Process aborted by keyboard interrupt.")
-                sys.exit(1)
-        else:
-            st.initialize()
-            st.command.run()
+
+        except SiteToolException as e:
+            if st.debug:
+                raise
+            else:
+                logger.warn("Error executing command: %s", e)
 
         #logger.debug("Program finished.")
 
