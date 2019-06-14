@@ -131,6 +131,8 @@ class FilesListCommand():
         (site_name, site_env) = Site.parse_site_env(self.site)
         site = self.ctx.get('sites').site_env(site_name, site_env)
 
+        # files_comp = self.resolve_files_from_selector_backup_dir(self.site)
+
         (files, errors) = site.comp('files').file_list('', all=self.all)
         if self.excluded:
             (files_all, errors_all) = site.comp('files').file_list('', all=True)
@@ -146,6 +148,9 @@ class FilesListCommand():
         if self.reverse:
             files.reverse()
 
+        for error in errors:
+            print("ERROR: %s" % error)
+
         # Print files
         total_size = 0
         for f in files:
@@ -155,7 +160,8 @@ class FilesListCommand():
                 f.size,
                 f.relpath))
 
-        print(" %d files, %.1f MB" % (len(files), total_size / (1024 * 1024)))
+        errors_str = "" if not errors else ("(+%d errors)" % len(errors))
+        print(" %d files, %.1f MB %s" % (len(files), total_size / (1024 * 1024), errors_str))
 
 
 class FilesDiffCommand():
@@ -202,7 +208,6 @@ class FilesDiffCommand():
         (site_b_name, site_b_env) = Site.parse_site_env(self.site_b)
 
         backup_date = datetime.datetime.now()
-        backup_job_name = backup_date.strftime('%Y%m%d-%H%M%S')
 
         site_a = self.ctx.get('sites').site_env(site_a_name, site_a_env)
         site_b = self.ctx.get('sites').site_env(site_b_name, site_b_env)

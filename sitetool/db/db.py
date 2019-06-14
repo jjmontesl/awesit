@@ -53,8 +53,7 @@ class SSHShellAdaptor():
             output = c.sudo(command, hide=True)
         else:
             output = c.run(command, hide=True)
-        output = output.stdout.strip()
-        return output
+        return (output.stdout, output.stderr)
 
 
 class DatabaseSerializeCommand():

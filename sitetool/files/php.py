@@ -65,7 +65,7 @@ class PHPFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return SiteFileList(result, errors)
+        return SiteFileList(result, [])
 
     def archive(self):
         """

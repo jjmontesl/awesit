@@ -10,6 +10,8 @@ from sitetool.db.db import SSHShellAdaptor
 import csv
 import io
 from sitetool.core.exceptions import SiteToolException
+import os
+import tarfile
 
 logger = logging.getLogger(__name__)
 
@@ -104,29 +106,47 @@ class SSHMySQLDatabase(SSHShellAdaptor):
         return tables
 
     def serialize(self):
+
         logger.debug("Serializing MySQL data: %s", self.get_name())
+        local_path = tempfile.mktemp(prefix='sitetool-tmp-db-serialize-')
+        remote_path = tempfile.mktemp(prefix='sitetool-tmp-db-serialize-remote-')
         tables = self.list_tables()
 
         items = {}
 
         with self.ssh_context() as c:
 
+            self.ssh_run(c, 'mkdir "%s"' % remote_path)
+
             for table in tables:
                 sql = "select * from %s;" % table
-                command = 'mysql --batch -h %s -u %s -p%s %s -e "%s"' % (self.db_host, self.db_user, self.db_password, self.db_name, sql)
+                command = 'mysql --batch -h %s -u %s -p%s %s -e "%s" > %s/%s' % (self.db_host, self.db_user, self.db_password, self.db_name, sql, remote_path, table)
 
                 output = None
                 try:
-                    if self.sudo:
-                        output = c.sudo(command, hide=True)
-                    else:
-                        output = c.run(command, hide=True)
-                    output = output.stdout  #.strip()
+                    output, errors = self.ssh_run(c, command)
                 except Exception as e:
                     # Assume the directory does not exist, but this is bad error handling
                     logger.warn("Error while serializing MySQL database: %s" % e)
                     output = ''
 
+            self.ssh_run(c, 'tar czf "%s.tgz" -C "%s" .' % (remote_path, remote_path))
+            self.ssh_run(c, 'rm -rf "%s"' % (remote_path))
+
+            # Download and uncompress
+            c.get("%s.tgz" % remote_path, local_path)
+            tar = tarfile.open(local_path, "r:gz")
+            for member in tar.getmembers():
+
+                table = member.name
+                f = tar.extractfile(member)
+                if not f: continue
+                print(member.name)
+                output = f.read()
+                output = str(output, "utf8")
+                f.close()
+
+                # Process table file
                 output = output.replace("\r", "")
 
                 rows = self._process_table_data(output)
@@ -135,6 +155,9 @@ class SSHMySQLDatabase(SSHShellAdaptor):
                                 'rows': rows[1:] if rows else [],
                                 'key': None,
                                 'schema': None}
+
+            self.ssh_run(c, 'rm "%s.tgz"' % (remote_path))
+            os.unlink(local_path)
 
         return items
 
@@ -156,32 +179,26 @@ class SSHMySQLDatabase(SSHShellAdaptor):
         #remote_backup_path = tempfile.mktemp(prefix='sitetool-tmp-db-remote-backup-')  # FIXME: shall be a remote tmporary file
 
         backup_path = tempfile.mktemp(prefix='sitetool-tmp-db-backup-')
-        logger.info("Archiving database (via SSH remote MySQL client) to %s", backup_path)
+        remote_path = tempfile.mktemp(prefix='sitetool-tmp-db-backup-remote-')
+        logger.info("Dummping database (via SSH remote MySQL client) to %s", remote_path)
 
-        with fabric.Connection(host=self.ssh_host, port=self.ssh_port, user=self.get_ssh_user()) as c:
-            output = None
+        with self.ssh_context() as c:
+            command = 'mysqldump -h %s -u %s -p%s --skip-lock-tables --add-drop-database %s | gzip > "%s.sql.gz"' % (self.db_host, self.db_user, self.db_password, self.db_name, remote_path)
             try:
-                if self.sudo:
-                    output = c.sudo('mysqldump -h %s -u %s -p%s --skip-lock-tables --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)  # hide=not self.st.debug, echo=not self.st.debug)
-                else:
-                    output = c.run('mysqldump -h %s -u %s -p%s --skip-lock-tables --add-drop-database %s' % (self.db_host, self.db_user, self.db_password, self.db_name), hide=True)
-                output = output.stdout.strip()
+                output, errors = self.ssh_run(c, command)
             except Exception as e:
                 # Assume the directory does not exist, but this is bad error handling
                 logger.warn("Error while dumping MySQL database through SSH: %s" % e)
                 output = ''
 
+            logger.info("Retrieving database backup.")
+            backup_path += ".sql.gz"
+            c.get("%s.sql.gz" % remote_path, backup_path)
 
-
-        with open(backup_path, 'w') as outfile:
-            outfile.write(output)
+            self.ssh_run(c, 'rm "%s.sql.gz"' % (remote_path))
 
         # FIXME: should be a tar_gz (?)
-        subprocess.call(["gzip", backup_path])
-        backup_path += ".gz"
-
         backup_md5sum = None
-
         return (backup_path, backup_md5sum)
 
     def restore(self, local_path):

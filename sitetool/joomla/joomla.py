@@ -12,6 +12,8 @@ import yaml
 from sitetool.core.components import SiteComponent
 import requests_html
 from sitetool.core.exceptions import SiteToolException
+import pickle
+import os
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,14 @@ class JoomlaSite(SiteComponent):
 
         session = requests_html.HTMLSession()
 
+        # Load cookies from storage
+        # TODO: Move these HTML request methods to a common class
+        try:
+            with open(os.path.expanduser("~/.awesit-cookies"), 'rb') as f:
+                session.cookies.update(pickle.load(f))
+        except Exception as e:
+            pass
+
         # Request loging page
         url = '%s/administrator/index.php' % (self.url)
         if self.url_initial:
@@ -47,18 +57,26 @@ class JoomlaSite(SiteComponent):
             logger.debug("Could not access Joomla instance through HTTP at: %s", url)
             return None
 
+        # TODO: check if admin login is required or session is already initiated
+
         # Extract form fields
-        data = {}
-        inputs = r.html.find('input')
-        for input in inputs:
-            key = input.attrs['name']
-            value = input.attrs.get('value', None)
-            data[key] = value
-        data['username'] = self.username
-        data['passwd'] = self.password
-        data['option'] = 'com_login'
-        data['task'] = 'login'
-        #data['return']
+        try:
+            data = {}
+            inputs = r.html.find('input')
+            for input in inputs:
+                key = input.attrs['name']
+                value = input.attrs.get('value', None)
+                data[key] = value
+            data['username'] = self.username
+            data['passwd'] = self.password
+            data['option'] = 'com_login'
+            data['task'] = 'login'
+            #data['return']
+        except Exception as e:
+            logger.debug("Could not access Joomla instance through HTTP at: %s", url)
+            logger.debug("Response: %s", r.text)
+            return None
+
 
         # Login
         url = '%s/administrator/index.php' % (self.url)
@@ -73,6 +91,9 @@ class JoomlaSite(SiteComponent):
         except Exception as e:
             logger.debug("Could not decode Joomla response: %s", r.text())
             raise SiteToolException("Coud not decode Joomla info: %s", e)
+
+        with open(os.path.expanduser("~/.awesit-cookies"), 'wb') as f:
+            pickle.dump(session.cookies, f)
 
         return result
 

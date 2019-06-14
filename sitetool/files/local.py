@@ -63,7 +63,7 @@ class LocalFiles(Files):
 
             if path == final_path: return
 
-            logger.debug("Could not access file '%s': %s", path, e)
+            logger.debug("Could not access '%s': %s", path, e)
             errors.append(e)
 
         for root, dirs, files in os.walk(final_path, onerror=fs_walk_error):

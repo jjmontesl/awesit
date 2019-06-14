@@ -105,7 +105,8 @@ class SSHFiles(Files):
                 raise SiteToolException("Error while listing files through SSH: %s" % e)
 
         if errors:
-            logger.warn("Errors listing files: %s", errors)
+            #logger.warn("Errors listing files: %s", errors)
+            errors = errors.split("\n")
 
         result = []
         for line in output.split("\n"):
@@ -128,7 +129,7 @@ class SSHFiles(Files):
         if not all:
             result = self.files_filtered(result)
 
-        return SiteFileList(result, [])
+        return SiteFileList(result, errors)
 
     def archive(self):
         """

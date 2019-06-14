@@ -1,8 +1,8 @@
-# Sitetool
+# Awesit - Another Website Tool
 
-Sitetool is a tool to manage website deploy, backup and update workflows.
+Awesit is a tool to manage website deploy, backup and update workflows.
 
-Sitetool can help developers, content workers, webmasters and users to
+Awesit can help developers, content workers, webmasters and users to
 backup deployed sites and replicate them to different environments.
 It can also calculate file and database differences between environments.
 It can also serve as a backup system and scheduler.
@@ -61,19 +61,19 @@ Enter the directory and install:
     python3.6 setup.py install
 
 
-In order to use SiteTool, **you must define a configuration file** that
+In order to use Awesit, **you must define a configuration file** that
 describes your different site projects and deployment environments.
 
 
 ## Configuration
 
-Sitetool requires information about the environments it manages.
+Awesit requires information about the environments it manages.
 
 Configuration is done in YAML format. Configuration may eventually
 include templates and other files. Depending on your use case,
 you may wish to keep your configuration files versioned.
 
-SiteTool reads by default configuration from user home `~/.sitetool.conf`.
+Awesit reads by default configuration from user home `~/.sitetool.conf`.
 This can be changed using the `-c` command line option.
 
 You can find an example configuration in the `sitetool.conf.sample` file.
@@ -163,7 +163,7 @@ Copy it to your home directory with name `.sitetool.conf` and
 
 ## License
 
-Sitetool is created and maintained by Pablo Arias and Jose Juan Montes.
+Awesit is created and maintained by Pablo Arias and Jose Juan Montes.
 
 License definition is pending (AGPL, MIT or Apache licenses are being considered).
 

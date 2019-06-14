@@ -29,12 +29,14 @@ class BackupDeployCommand():
         parser.add_argument("source", help="[backupsite:env:]site:env:job - source backup job")
         parser.add_argument("target", nargs='?', help="site:env - target deployment site and environment")
         parser.add_argument("-l", "--list", action="store_true", default=False, help="list the selected backup(s) and exit")
+        parser.add_argument("-y", "--yes", action="store_true", default=False, help="allow deleting more than one backup")
 
         args = parser.parse_args(args)
 
         self.src = args.source
         self.dst = args.target
         self.list = args.list
+        self.yes = args.yes
 
     def run(self):
         """
@@ -65,6 +67,13 @@ class BackupDeployCommand():
         job = jobs[0]
 
         logger.info("Restoring %s from: %s to: %s", job, self.src, self.dst)
+
+        # Confirm
+        if not self.yes:
+            confirm = input("Are you sure you want to deploy to '%s'? [y/N] " % self.dst)
+            if confirm.lower() not in ('y', 'yes'):
+                logger.info("Cancelled by user")
+                sys.exit(0)
 
         backup_site = job.env_backup
         src_site = job.env_site

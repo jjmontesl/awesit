@@ -17,6 +17,30 @@ from sitetool.core.components import SiteToolComponent
 logger = logging.getLogger(__name__)
 
 
+class BackupJob():  # namedtuple('BackupJob', 'env_backup env_site relpath dt_create size index count')):
+
+    def __init__(self, env_backup, env_site, relpath, dt_create, size, index, count):
+        self.env_backup = env_backup
+        self.env_site = env_site
+        self.relpath = relpath
+        self.dt_create = dt_create
+        self.size = size
+        self.count = count
+
+        self.hash = None
+        self.artifact = None  # 'files'
+
+        self.index = index
+        self.tags = None
+
+    def __str__(self):
+        return ("%s:%s:%s:%s:%s" % (self.env_backup.site.name,
+                                    self.env_backup.name,
+                                    self.env_site.site.name,
+                                    self.env_site.name,
+                                    self.index))
+
+
 class BackupCommand():
     '''
     Perform a files backup from a given site.
@@ -124,35 +148,40 @@ class BackupDeleteCommand():
 
         parser = argparse.ArgumentParser(prog="sitetool backup-delete", description=self.COMMAND_DESCRIPTION)
         parser.add_argument("backup", default=None, help="backupsite:env:site:env:sel - backup(s) to delete")
-        parser.add_argument("-m", "--many", action="store_true", default=False, help="allow deleting more than one backup")
-        #parser.add_argument("-y", "--yes", action="store_true", default=False, help="allow deleting more than one backup")
         parser.add_argument("-l", "--list", action="store_true", default=False, help="list backups that would be deleted and exit")
+        parser.add_argument("-y", "--yes", action="store_true", default=False, help="allow deleting more than one backup")
 
         args = parser.parse_args(args)
 
         self.src = args.backup
-        self.many = args.many
+        self.yes = args.yes
         self.list = args.list
 
     def run(self):
         """
         """
 
-        if self.list:
-            logger.info("Listing backups that would be deleted by this filter:")
-            command = BackupListCommand(self.ctx)
-            command.src = self.src
-            return command.run()
-
         backupmanager = self.ctx.get('backups')
         backups = backupmanager.list_backups(self.src)
 
-        if len(backups) == 0 and not self.many:
-            logger.error("No backups matched your filter %s", self.src)
+        if len(backups) == 0:
+            logger.error("No backups matched your filter: '%s'", self.src)
             sys.exit(1)
-        elif len(backups) > 1 and not self.many:
-            logger.error("Cannot delete backups: %d backups matched your filter %s (use -l to list, --many if you want to delete all of them)", len(backups), self.src)
-            sys.exit(1)
+
+        logger.info("Backups selected:")
+        command = BackupListCommand(self.ctx)
+        command.src = self.src
+        command.run()
+
+        if self.list:
+            sys.exit(0)
+
+        # Confirm
+        if not self.yes:
+            confirm = input("Are you sure you want to delete %d backups? [y/N] " % len(backups))
+            if confirm.lower() not in ('y', 'yes'):
+                logger.info("Cancelled by user")
+                sys.exit(0)
 
         logger.info("Deleting %d backups.", len(backups))
 
@@ -236,16 +265,6 @@ class BackupListCommand():
                 backup.dt_create if self.exact_time else timeago(backup.dt_create)))
 
         print("Listed jobs: %d  Total size: %.1fMB" % (count, total_size / (1024 * 1024)))
-
-
-class BackupJob(namedtuple('BackupJob', 'env_backup env_site relpath dt_create size index count')):
-
-    def __str__(self):
-        return ("%s:%s:%s:%s:%s" % (self.env_backup.site.name,
-                                    self.env_backup.name,
-                                    self.env_site.site.name,
-                                    self.env_site.name,
-                                    self.index))
 
 
 class BackupManager(SiteToolComponent):
