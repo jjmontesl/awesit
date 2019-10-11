@@ -126,10 +126,11 @@ class SSHFiles(Files):
             result.append(SiteFile(file_path_rel, int(size), mtime))
 
         # Excludes
+        ignored_count = 0
         if not all:
-            result = self.files_filtered(result)
+            result, ignored_count = self.files_filtered(result)
 
-        return SiteFileList(result, errors)
+        return SiteFileList(result, errors, ignored_count)
 
     def archive(self):
         """
@@ -142,7 +143,7 @@ class SSHFiles(Files):
         backup_md5sum = None
 
         logger.info("Resolving files to be archived.")
-        filelist, errors = self.file_list('')
+        filelist, errors, excluded_count = self.file_list('')
         size = sum([f.size for f in filelist]) if filelist else 0
 
          # Write filelist to file

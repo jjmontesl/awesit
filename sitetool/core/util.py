@@ -53,6 +53,10 @@ class bcolors_nocolor:
 bcolors = bcolors_color
 
 
+def utcnow():
+    raise NotImplementedError()
+
+
 def timeago(utcdatetime):
 
     #datetime = utcdatetime.astimezone().replace(tzinfo=None)

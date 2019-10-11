@@ -12,26 +12,28 @@ import sys
 
 from sitetool.sites import Site
 from sitetool.core.util import timeago
-from sitetool.core.components import SiteToolComponent
+from sitetool.core.components import SiteToolComponent, SiteToolSettings
+from sitetool.core.exceptions import SiteToolException
+import json
 
 logger = logging.getLogger(__name__)
 
 
-class BackupJob():  # namedtuple('BackupJob', 'env_backup env_site relpath dt_create size index count')):
+class BackupJobRenameOtherToBackupJobItem():   # Backup Item
 
-    def __init__(self, env_backup, env_site, relpath, dt_create, size, index, count):
+    def __init__(self):
+
         self.env_backup = env_backup
         self.env_site = env_site
-        self.relpath = relpath
-        self.dt_create = dt_create
-        self.size = size
-        self.count = count
 
         self.hash = None
-        self.artifact = None  # 'files'
 
-        self.index = index
+        self.itemnames = None  # ['files', 'db']
+        self.items = None  # BackupJobItems
+
         self.tags = None
+
+        self.index = None  # only if in a listing
 
     def __str__(self):
         return ("%s:%s:%s:%s:%s" % (self.env_backup.site.name,
@@ -39,6 +41,33 @@ class BackupJob():  # namedtuple('BackupJob', 'env_backup env_site relpath dt_cr
                                     self.env_site.site.name,
                                     self.env_site.name,
                                     self.index))
+
+
+class BackupJob():  # namedtuple('BackupJob', 'env_backup env_site relpath dt_create size index count')):
+
+    def __init__(self, item, env_backup, env_site, relpath, dt_create, size, file_count, errors_count):
+        self.relpath = relpath
+        self.dt_create = dt_create
+        self.size = size
+        self.file_count = file_count
+        self.errors_count = errors_count
+
+        self.item = item  # 'files'
+
+    def __str__(self):
+        return ("%s:%s:%s:%s:%s" % (self.env_backup.site.name,
+                                    self.env_backup.name,
+                                    self.env_site.site.name,
+                                    self.env_site.name,
+                                    self.index))
+
+    def serialize(self):
+        data = self.__dict__
+        return json.dumps(data)
+
+    def deserialize(self, data):
+        datadict = json.loads(data)
+        self.__dict__.update(datadict)
 
 
 class BackupCommand():
@@ -55,7 +84,9 @@ class BackupCommand():
 
         parser = argparse.ArgumentParser(description=self.COMMAND_DESCRIPTION)
         parser.add_argument("src", help="site:env - source site and environment")
-        parser.add_argument("dst", nargs='?', default='backup:main', help="site:env - target backup site and environment")
+        parser.add_argument("dst", nargs='?', default=None, help="site:env - target backup site and environment")
+        parser.add_argument("-i", "--item", default=None, type=str, help="backup given items only (separate multiple items with commas: files,db)")
+        parser.add_argument("-t", "--tag", default=None, type=str, help="tag backup (separate multiple tags with commas)")
 
         args = parser.parse_args(args)
 
@@ -70,69 +101,18 @@ class BackupCommand():
 
         dt_start = datetime.datetime.utcnow()
 
-        (src_site_name, src_site_env) = Site.parse_site_env(self.src)
-        (backup_site_name, backup_site_env) = Site.parse_site_env(self.dst)
+        if not self.dst:
+            self.dst = 'backup:main' #default_backup_dst
 
-        backup_date = datetime.datetime.now()
-        backup_job_name = backup_date.strftime('%Y%m%d-%H%M%S')
+        src_site = self.ctx.get('sites').get_site(self.src)
+        backup_site = self.ctx.get('sites').get_site(self.dst)
 
-        src_site = self.ctx.get('sites').site_env(src_site_name, src_site_env)
-
-        logger.info("Backup %s to %s", self.src, self.dst)
-
-        # TODO: Objects should define their backup artifacts (from 0 to N)
-        backup_size = 0
-
-        # Copy files
-        if 'files' in src_site.config:
-
-            logger.debug("Backup files for: %s", self.src)
-
-            (tmpfile_path, files_hash) = src_site.comp('files').archive()
-            #logger.info("Backup remote file path: %s (hash: %x)", files_path, files_hash or 0)
-
-            stats = os.stat(tmpfile_path)
-            backup_size += stats[stat.ST_SIZE]
-
-            # Copy backup file to place
-            backup_site = self.ctx.get('sites').site_env(backup_site_name, backup_site_env)
-            #backup_root_dir = '/home/jjmontes/sitetool/backup/'
-            backup_path = '%s/%s/%s-%s-%s-files.tar.gz' % (src_site_name, src_site_env, src_site_name, src_site_env, backup_job_name)
-
-            backup_site.comp('files').file_put(tmpfile_path, backup_path)
-
-            os.unlink(tmpfile_path)
-
-        # Copy database
-        if 'db' in src_site.config:
-            backup_size += self._backup_database(src_site, backup_job_name)
+        backupmanager = self.ctx.get('backups')
+        #backups = backupmanager.list_backups(self.src)
+        job = backupmanager.backup(src_site, backup_site)
 
         backup_time = (datetime.datetime.utcnow() - dt_start).total_seconds()
-        logger.info("Backup finished (time: %.1fm, size=%.2fM)", backup_time / 60.0, backup_size / (1024 * 1024))
-
-    def _backup_database(self, src_site, backup_job_name):
-
-        logger.info("Backup DB for: %s", self.src)
-
-        (tmpdb_path, tmpdb_hash) = src_site.comp('db').dump()
-        logger.debug("Backup DB result path: %s", tmpdb_path)
-
-        stats = os.stat(tmpdb_path)
-        backup_size = stats[stat.ST_SIZE]
-
-        (src_site_name, src_site_env) = Site.parse_site_env(self.src)
-        (backup_site_name, backup_site_env) = Site.parse_site_env(self.dst)
-
-        # Copy database file to place
-        backup_site = self.ctx.get('sites').site_env(backup_site_name, backup_site_env)
-        #backup_root_dir = '/home/jjmontes/sitetool/backup/'
-        backup_path = '%s/%s/%s-%s-%s-db.tar.gz' % (src_site_name, src_site_env, src_site_name, src_site_env, backup_job_name)
-
-        backup_site.comp('files').file_put(tmpdb_path, backup_path)
-
-        os.unlink(tmpdb_path)
-
-        return backup_size
+        logger.info("Backup finished (time: %.1fm, size=%.2fM)", backup_time / 60.0, job.size / (1024 * 1024))
 
 
 class BackupDeleteCommand():
@@ -196,6 +176,75 @@ class BackupDeleteCommand():
             # Copy and restore files
             backup_path = '%s/%s/%s' % (src_site.site.name, src_site.name, job_filename)
             backup_site.comp('files').file_delete(backup_path)
+
+
+class BackupTagCommand():
+    '''
+    '''
+
+    COMMAND_DESCRIPTION = 'Tag or untag backups'
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def parse_args(self, args):
+
+        parser = argparse.ArgumentParser(prog="sitetool backup-tag", description=self.COMMAND_DESCRIPTION)
+        parser.add_argument("backup", default=None, help="backupsite:env:site:env:sel - backup(s) to delete")
+        parser.add_argument("-l", "--list", action="store_true", default=False, help="list backups that would be deleted and exit")
+        parser.add_argument("-t", "--tag", default=None, type=str, help="tag backup (separate multiple tags with commas)")
+        parser.add_argument("-u", "--untag", default=None, type=str, help="remove tag(s) (separate multiple tags with commas)")
+
+        args = parser.parse_args(args)
+
+        self.src = args.backup
+
+        # FIXME: Validate: tags cannot start with '-'
+        self.tag = args.tag.split(",")
+        self.untag = args.untag.split(",")
+
+    def run(self):
+        """
+        """
+
+        backupmanager = self.ctx.get('backups')
+        backups = backupmanager.list_backups(self.src)
+
+        if len(backups) == 0:
+            logger.error("No backups matched your filter: '%s'", self.src)
+            sys.exit(1)
+
+        logger.info("Backups selected:")
+        command = BackupListCommand(self.ctx)
+        command.src = self.src
+        command.run()
+
+        if self.list:
+            sys.exit(0)
+
+        # Confirm
+        if not self.yes:
+            confirm = input("Are you sure you want to tag %d backups? [y/N] " % len(backups))
+            if confirm.lower() not in ('y', 'yes'):
+                logger.info("Cancelled by user")
+                sys.exit(0)
+
+        logger.info("Tagging %d backups.", len(backups))
+
+        for job in backups:
+            '''
+            backup_site = job.env_backup
+            src_site = job.env_site
+
+            logger.info("Deleting backup: %s", job)
+            job_filename = os.path.basename(job.relpath)
+
+            # Copy and restore files
+            backup_path = '%s/%s/%s' % (src_site.site.name, src_site.name, job_filename)
+            backup_site.comp('files').file_delete(backup_path)
+            '''
+            raise NotImplementedError()
+
 
 
 class BackupListCommand():
@@ -275,6 +324,103 @@ class BackupManager(SiteToolComponent):
     def initialize(self, ctx):
         self.ctx = ctx
 
+    def backup(self, src_site, backup_site):
+
+        backup_date = datetime.datetime.utcnow()
+
+        logger.info("Backup %s to %s", src_site, backup_site)
+
+        # TODO: Objects should define their backup artifacts (from 0 to N)
+        backup_size = 0
+
+        # Copy files
+        if 'files' in src_site.config:
+            backup_size += self._backup_files(src_site, backup_site, backup_date)
+        # Copy database
+        if 'db' in src_site.config:
+            backup_size += self._backup_database(src_site, backup_site, backup_date)
+
+        # TODO: return backup job
+        job = BackupJob(backup_site, src_site, '', backup_date, backup_size, None, None)
+        return job
+
+    def _backup_files(self, src_site, backup_site, backup_date):
+
+        logger.debug("Backup files for: %s", src_site)
+        backup_job_name = backup_date.strftime('%Y%m%d-%H%M%S')
+
+        (tmpfile_path, files_hash) = src_site.comp('files').archive()
+        #logger.info("Backup remote file path: %s (hash: %x)", files_path, files_hash or 0)
+
+        stats = os.stat(tmpfile_path)
+        backup_size = stats[stat.ST_SIZE]
+
+        # Copy backup file to place
+        #backup_root_dir = '/home/jjmontes/sitetool/backup/'
+        backup_path = '%s/%s/%s-%s-%s-files.tar.gz' % (src_site.site.name, src_site.name, src_site.site.name, src_site.name, backup_job_name)
+
+        backup_site.comp('files').file_put(tmpfile_path, backup_path)
+
+        os.unlink(tmpfile_path)
+
+        job = BackupJob(backup_site, src_site, '', backup_date, backup_size, None, None)
+
+        return backup_size
+
+    def _backup_database(self, src_site, backup_site, backup_date):
+
+        logger.info("Backup DB for: %s", src_site)
+        backup_job_name = backup_date.strftime('%Y%m%d-%H%M%S')
+
+        (tmpdb_path, tmpdb_hash) = src_site.comp('db').dump()
+        logger.debug("Backup DB result path: %s", tmpdb_path)
+
+        stats = os.stat(tmpdb_path)
+        backup_size = stats[stat.ST_SIZE]
+
+        # Copy database file to place
+        #backup_root_dir = '/home/jjmontes/sitetool/backup/'
+        backup_path = '%s/%s/%s-%s-%s-db.tar.gz' % (src_site.site.name, src_site.name, src_site.site.name, src_site.name, backup_job_name)
+
+        backup_site.comp('files').file_put(tmpdb_path, backup_path)
+
+        os.unlink(tmpdb_path)
+
+        return backup_size
+
+    def parse_backup_selector(self, selector):
+
+        backup_selector = self.setting('backup.selector', 'replace', '*:*')
+
+        backup_site_name = backup_selector.split(":")[0]
+        backup_site_env = backup_selector.split(":")[1]
+
+        src_site_name = ""
+        src_site_env = ""
+
+        job_expr = ""
+
+        parts = selector.split(":") if selector else []
+        if len(parts) == 0:
+            return (backup_site_name, backup_site_env, src_site_name, src_site_env, job_expr)
+        elif len(parts) == 1:
+            # Site name
+            return (backup_site_name, backup_site_env, parts[0], src_site_env, job_expr)
+        elif len(parts) == 2:
+            # Site and env name
+            return (backup_site_name, backup_site_env, parts[0], parts[1], job_expr)
+        elif len(parts) == 3:
+            # Site and env name
+            return (backup_site_name, backup_site_env, parts[0], parts[1], parts[2])
+        elif len(parts) == 4:
+            # Site and env name
+            return (parts[0], parts[1], parts[2], parts[3], job_expr)
+        elif len(parts) == 5:
+            return (parts[0], parts[1], parts[2], parts[3], parts[4])
+        else:
+            raise SiteToolException("Invalid backup selector: '%s'" % selector)
+
+
     def group_backups(self, backups):
         groups = defaultdict(lambda: {'count': 0, 'size': 0, 'dt_create': None})
         for job in backups:
@@ -291,19 +437,14 @@ class BackupManager(SiteToolComponent):
 
         return jobs
 
-
     def list_backups(self, match=None):
 
-        if match is None:
-            # FIXME: Use default selector if set (but by default use ':'
-            match = ':main' + ':::'
-
-        # Walk backups
-
-        (backup_site_name, backup_site_env, src_site_name, src_site_env, job_expr) = match.split(":")
+        # TODO: Separate method
+        (backup_site_name, backup_site_env, src_site_name, src_site_env, job_expr) = self.parse_backup_selector(match)
 
         jobs = []
 
+        # Walk backups
         for site_name, site in self.ctx.get('sites').sites.items():
             if backup_site_name in ('*', '') or backup_site_name == site_name:
                 for env_name, env in site.envs.items():

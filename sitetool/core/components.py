@@ -19,6 +19,16 @@ class SiteToolComponent():
     def initialize(self, ctx):
         raise NotImplementedError("Component %s does not implement initialization properly." % type(self))
 
+    def setting(self, setting, type, value):
+        """
+        Evaluates a setting value by combining current value with environment,
+        site and global settings.
+        """
+        # Get settings
+        result = self.ctx.get('settings').setting(setting) if 'settings' in self.ctx else value
+        #logger.info("(E) Setting: %s  Type: %s  My Value: %s  (Base Value: %s): %s", setting, type, my_value, base_value, result)
+        return result
+
 
 class SiteComponent(SiteToolComponent):
 

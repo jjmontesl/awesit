@@ -24,8 +24,9 @@ develop-eggs
 /ROADMAP
 /build
 
-/sitetool.conf
-/sitetool.conf.j
+/awesit.conf
+/awesit.conf.*
+!/awesit.conf.sample
 
 /virtualenv
 /env

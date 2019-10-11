@@ -54,7 +54,7 @@ Requires Python 3.6 or above.
 
 Clone the source repository:
 
-    git clone https://github.com/jjmontesl/sitetool
+    git clone https://github.com/jjmontesl/awesit
 
 Enter the directory and install:
 
@@ -73,11 +73,11 @@ Configuration is done in YAML format. Configuration may eventually
 include templates and other files. Depending on your use case,
 you may wish to keep your configuration files versioned.
 
-Awesit reads by default configuration from user home `~/.sitetool.conf`.
+Awesit reads by default configuration from user home `~/.awesit.conf`.
 This can be changed using the `-c` command line option.
 
-You can find an example configuration in the `sitetool.conf.sample` file.
-Copy it to your home directory with name `.sitetool.conf` and
+You can find an example configuration in the `awesit.conf.sample` file.
+Copy it to your home directory with name `.awesit.conf` and
 **edit it** to reflect the sites you will be managing.
 
 
@@ -88,8 +88,8 @@ Copy it to your home directory with name `.sitetool.conf` and
     $ # List configured sites, computing their size
     $ sit sites -f
 
-    backup:main      [ 4865.9M /    17 files] (an hour ago) ~/sitetool/backup/
-    backup:testssh   [    8.5M /     2 files] (16 minutes ago) /tmp/sitetoolbackup/
+    backup:main      [ 4865.9M /    17 files] (an hour ago) ~/awesit/backup/
+    backup:testssh   [    8.5M /     2 files] (16 minutes ago) /tmp/awesitbackup/
     site1:prod       [  201.7M /  1089 files] (11 hours ago) /opt/site1
     site2:prod       [  409.5M / 12816 files] (37 minutes ago) /opt/site2
     site2:tmp        [    0.0M /     0 files] (-) /tmp/site2/

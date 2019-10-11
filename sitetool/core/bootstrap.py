@@ -59,7 +59,7 @@ class Bootstrap():
 
         parser = argparse.ArgumentParser(usage=usage, add_help=False)  # description='', usage = ''
         parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug logging")
-        parser.add_argument("-c", "--config", default="~/.sitetool.conf", help="config file")
+        parser.add_argument("-c", "--config", default="~/.awesit.conf", help="config file")
 
         exclusive_grp = parser.add_mutually_exclusive_group()
         exclusive_grp.add_argument('--color', action='store_true', dest='color', default=None, help='color')

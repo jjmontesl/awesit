@@ -89,10 +89,11 @@ class LocalFiles(Files):
                     logger.warn(e)
 
         # Excludes
+        excluded_count = 0
         if not all:
-            result = self.files_filtered(result)
+            result, excluded_count = self.files_filtered(result)
 
-        return SiteFileList(result, errors)
+        return SiteFileList(result, errors, excluded_count)
 
     def archive(self):
         """

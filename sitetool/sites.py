@@ -77,6 +77,9 @@ class SiteEnv(SiteToolComponent):
     def key(self):
         return (self.site.name, self.name)
 
+    def __str__(self):
+        return self.selector
+
     def initialize(self, ctx):
         self.ctx = ctx
         for comp_name, comp in self.config.items():
@@ -122,8 +125,13 @@ class SiteManager(SiteToolComponent):
             site.initialize(ctx)
         self.sites = self.config
 
+    def get_site(self, selector):
+        site_name, env_name = selector.split(":")
+        site = self.site_env(site_name, env_name)
+        return site
+
     def site_env(self, site_name, env_name):
-        if not site_name in self.sites:
+        if site_name not in self.sites:
             logger.error("Invalid site name '%s'." % site_name)
             sys.exit(1)
         site = self.sites[site_name].env(env_name)

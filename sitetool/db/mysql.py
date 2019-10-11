@@ -20,10 +20,10 @@ class MySQLDatabase():
     """
     """
 
-    #db_host = None
-    #db_pass = None
-    #db_user = None
-    #db_port = None
+    db_host = None
+    db_user = None
+    db_password = None
+    db_name = None
 
     db_dump_extra = None
 
@@ -36,10 +36,10 @@ class MySQLDatabase():
 
         #mysqldump -h 127.0.0.1 -u root -p --all-databases
         with open(backup_path, 'w') as outfile:
-            subprocess.call(["mysqldump", "-h", self.host, '-u', self.user, '-p%s' % self.password,
+            subprocess.call(["mysqldump", "-h", self.db_host, '-u', self.db_user, '-p%s' % self.db_password,
                              #'--column-statistics=0',
                              '--skip-lock-tables',
-                             '--add-drop-database', self.db], stdout=outfile)
+                             '--add-drop-database', self.db_name], stdout=outfile)
 
         # FIXME: should be a tar_gz
         subprocess.call(["gzip", backup_path])
@@ -61,7 +61,7 @@ class MySQLDatabase():
 
         logger.info("Loading database.")
         subprocess.call(["/bin/bash", "-c", 'mysql -h "%s" -u "%s" -p%s %s < %s' % (
-            self.host, self.user, self.password, self.db, path)], stdout=sys.stdout)
+            self.db_host, self.db_user, self.db_password, self.db_name, path)], stdout=sys.stdout)
 
 
 

@@ -73,7 +73,12 @@ class SQLiteDatabase(SSHShellAdaptor):
                     logger.warn("Error while serializing SQLite database: %s" % e)
                     output = ''
 
-                items[table] = self._process_table_data(output)
+                rows = self._process_table_data(output)
+                items[table] = {'name': table,
+                                'columns': rows[0] if rows else None,
+                                'rows': rows[1:] if rows else [],
+                                'key': None,
+                                'schema': None}
 
         return items
 
